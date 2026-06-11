@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-development-key-change-in-production')
 DEBUG = config('DEBUG', default=True, cast=bool)
-ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = str(config('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1')).split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -94,7 +94,7 @@ REST_FRAMEWORK = {
 }
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS = config('FRONTEND_URL', default='http://localhost:3000').split(',')
+CORS_ALLOWED_ORIGINS = str(config('FRONTEND_URL', default='http://localhost:3000')).split(',')
 CORS_ALLOW_CREDENTIALS = True
 
 # Supabase Configuration
