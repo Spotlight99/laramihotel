@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: larami-hotel-backend
+    env: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && gunicorn hotel_management.wsgi:application
+    healthCheckPath: /api/rooms/
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: DJANGO_SETTINGS_MODULE
+        value: hotel_management.settings
