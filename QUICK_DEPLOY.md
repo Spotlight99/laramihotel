@@ -18,11 +18,16 @@ SECRET_KEY=django-insecure-your-random-key-here
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=your-anon-key
 SUPABASE_SERVICE_KEY=your-service-key
-DATABASE_URL=postgresql://user:pass@db.supabase.co:5432/postgres
+DATABASE_URL=postgresql://postgres:password@db.supabase.co:5432/postgres
 MANAGER_WHATSAPP=2348146800508
 FRONTEND_URL=https://your-domain.vercel.app
 CORS_ALLOWED_ORIGINS=https://your-domain.vercel.app
 ```
+
+⚠️ **Important**: For DATABASE_URL:
+- Remove any brackets `[ ]` from password
+- Replace `@` character in password with `%40`
+- Example: `Chiemeka@9099` → `Chiemeka%409099`
 
 **After deployment:** Copy the Railway URL (e.g., `https://larami-backend-prod.up.railway.app`)
 
@@ -82,7 +87,7 @@ vercel --prod
 | SUPABASE_URL | Supabase Dashboard → Settings → API |
 | SUPABASE_KEY | Supabase Dashboard → Settings → API |
 | SUPABASE_SERVICE_KEY | Supabase Dashboard → Settings → API |
-| DATABASE_URL | Supabase → Database → Connection Pooling |
+| DATABASE_URL | Supabase → Connection Pooling (⚠️ Remove brackets, URL-encode @ as %40) |
 | SECRET_KEY | Generate: `openssl rand -hex 32` |
 
 ---

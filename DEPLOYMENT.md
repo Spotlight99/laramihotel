@@ -106,9 +106,14 @@ In Supabase dashboard:
 ### Connection String
 
 1. Go to "Database" → "Connection Pooling"
-2. Copy connection string
-3. Format: `postgresql://postgres:PASSWORD@HOST:5432/postgres`
-4. Use as `DATABASE_URL` in backend .env
+2. Select "Transaction mode"
+3. Copy connection string: `postgresql://postgres:PASSWORD@HOST:5432/postgres`
+4. **IMPORTANT**: Replace special characters:
+   - Remove any brackets `[ ]`
+   - Replace `@` in password with `%40` (URL encoding)
+   - Example: `Chiemeka@9099` becomes `Chiemeka%409099`
+5. Final format: `postgresql://postgres:Chiemeka%409099@db.zhydylqphtuuxdppdjyd.supabase.co:5432/postgres`
+6. Use as `DATABASE_URL` in backend .env
 
 ### Create Tables (Automatic with Django)
 

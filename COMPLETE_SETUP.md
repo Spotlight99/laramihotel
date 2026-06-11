@@ -148,11 +148,10 @@ SUPABASE_KEY=your-anon-key
 SUPABASE_SERVICE_KEY=your-service-key
 
 # Database
-DATABASE_NAME=larami_hotel
-DATABASE_USER=postgres
-DATABASE_PASSWORD=your-password
-DATABASE_HOST=db.supabase.co
-DATABASE_PORT=5432
+# Get from Supabase → Database → Connection Pooling
+# Format: postgresql://user:password@host:port/database
+# NOTE: URL-encode special characters (@ becomes %40)
+DATABASE_URL=postgresql://postgres:your-password@db.supabase.co:5432/postgres
 
 # WhatsApp
 MANAGER_WHATSAPP=2348146800508
