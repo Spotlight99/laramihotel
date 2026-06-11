@@ -17,9 +17,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
-    'rooms',
-    'bookings',
-    'api',
+    'hotel_management.rooms',
+    'hotel_management.bookings',
+    'hotel_management.api',
 ]
 
 MIDDLEWARE = [
