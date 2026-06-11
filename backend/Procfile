@@ -1,0 +1,2 @@
+web: gunicorn hotel_management.wsgi
+release: python manage.py migrate

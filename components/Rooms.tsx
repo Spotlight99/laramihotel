@@ -1,0 +1,141 @@
+"use client";
+
+import Image from "next/image";
+
+const rooms = [
+  {
+    name:    "Standard Room",
+    price:   "₦25,000",
+    tagline: "Cosy comfort for every budget",
+    image:   "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=900&q=80&auto=format&fit=crop",
+    badge:   "Best Value",
+    badgeColor: "bg-forest-700",
+    features: [
+      { icon: "📶", label: "Free High-Speed WiFi"  },
+      { icon: "❄️", label: "Air Conditioning"       },
+      { icon: "📺", label: "Smart TV"               },
+      { icon: "⚡", label: "24/7 Power Supply"      },
+    ],
+  },
+  {
+    name:    "Deluxe Room",
+    price:   "₦35,000",
+    tagline: "Elevated space and refined comfort",
+    image:   "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=900&q=80&auto=format&fit=crop",
+    badge:   "Most Popular",
+    badgeColor: "bg-gold-500",
+    features: [
+      { icon: "📶", label: "Free High-Speed WiFi"  },
+      { icon: "❄️", label: "Air Conditioning"       },
+      { icon: "📺", label: "Smart TV"               },
+      { icon: "💼", label: "Work Desk & Chair"      },
+    ],
+  },
+  {
+    name:    "Executive Room",
+    price:   "₦45,000",
+    tagline: "Premium suite for the discerning guest",
+    image:   "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=900&q=80&auto=format&fit=crop",
+    badge:   "Premium",
+    badgeColor: "bg-forest-900",
+    features: [
+      { icon: "📶", label: "Free High-Speed WiFi"  },
+      { icon: "❄️", label: "Climate Control"        },
+      { icon: "📺", label: "Smart TV"               },
+      { icon: "🛎️", label: "Priority Room Service" },
+    ],
+  },
+];
+
+export default function Rooms() {
+  return (
+    <section id="rooms" className="py-28 bg-cream">
+      <div className="max-w-7xl mx-auto px-6">
+        {/* Section header */}
+        <div className="text-center mb-16">
+          <p className="text-gold-500 text-xs tracking-[0.35em] uppercase font-body font-light mb-4">
+            Accommodation
+          </p>
+          <div className="ornament-divider">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M7 0L8.3 5.7L14 7L8.3 8.3L7 14L5.7 8.3L0 7L5.7 5.7Z" fill="#c9901a" />
+            </svg>
+          </div>
+          <h2 className="font-display text-forest-900 font-semibold text-4xl md:text-5xl mb-4">
+            Our Rooms & Suites
+          </h2>
+          <p className="text-forest-600 font-body font-light text-base md:text-lg max-w-xl mx-auto">
+            Every room is thoughtfully designed for comfort, equipped with modern
+            amenities and reliable 24/7 power.
+          </p>
+        </div>
+
+        {/* Room cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {rooms.map((room) => (
+            <div
+              key={room.name}
+              className="card-lift bg-white rounded-2xl overflow-hidden shadow-md border border-forest-50 flex flex-col"
+            >
+              {/* Image */}
+              <div className="relative h-52 overflow-hidden">
+                <Image
+                  src={room.image}
+                  alt={room.name}
+                  fill
+                  className="object-cover transition-transform duration-700 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-forest-950/50 via-transparent to-transparent" />
+                {/* Badge */}
+                <span
+                  className={`absolute top-4 right-4 ${room.badgeColor} text-white text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-full`}
+                >
+                  {room.badge}
+                </span>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 flex flex-col flex-1">
+                <div className="mb-4">
+                  <h3 className="font-display text-forest-900 text-xl font-semibold mb-1">
+                    {room.name}
+                  </h3>
+                  <p className="text-forest-500 font-body font-light text-sm">
+                    {room.tagline}
+                  </p>
+                </div>
+
+                {/* Features */}
+                <ul className="space-y-2 mb-6 flex-1">
+                  {room.features.map((f) => (
+                    <li
+                      key={f.label}
+                      className="flex items-center gap-3 text-forest-700 text-sm font-body"
+                    >
+                      <span>{f.icon}</span>
+                      {f.label}
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Price + CTA */}
+                <div className="flex items-center justify-between pt-4 border-t border-forest-50">
+                  <div>
+                    <p className="text-forest-400 text-xs font-body tracking-wide">From</p>
+                    <p className="font-display text-forest-900 text-lg font-semibold">{room.price}</p>
+                  </div>
+                  <a
+                    href="#contact"
+                    className="btn-gold text-forest-900 text-xs font-bold tracking-wider uppercase px-5 py-2.5 rounded-full font-body"
+                  >
+                    Book Now
+                  </a>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
