@@ -4,7 +4,16 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from datetime import datetime, timedelta
 from .models import Room, Hotel
-from .serializers import RoomSerializer, RoomDetailSerializer, HotelSerializer
+from .serializers import RoomSerializer, RoomDetailSerializer, HotelSerializer 
+
+from rest_framework.decorators import api_view
+
+@api_view(["GET"])
+def debug_rooms(request):
+    return Response({
+        "rooms": Room.objects.count(),
+        "hotels": Hotel.objects.count(),
+    })
 
 class RoomViewSet(viewsets.ModelViewSet):
     queryset = Room.objects.all()
