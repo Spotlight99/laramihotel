@@ -1,3 +1,5 @@
+import json
+
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -54,13 +56,25 @@ class AuthViewSet(viewsets.ViewSet):
                 {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+    import json
     @action(detail=False, methods=['post'])
     def login(self, request):
+
+        raw_json = request.data.get("_content")
+
+        if raw_json:
+            data = json.loads(raw_json)
+
+            return Response({
+               "email": data.get("email"),
+               "password": data.get("password"),
+               "message": "JSON parsed successfully"
+            })
+
         return Response({
-            "request_data": request.data,
-            "data_type": str(type(request.data)),
-            "content_type": request.content_type,
-        })
+            "error": "No JSON received"
+      })
 
     @action(detail=False, methods=['post'])
     def send_otp(self, request):
