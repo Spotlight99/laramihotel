@@ -58,11 +58,11 @@ class AuthViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'])
     def login(self, request):
         return Response({
-            "debug": "LOGIN METHOD HIT",
-            "email": request.data.get("email"),
-            "password": request.data.get("password"),
+           "request_data": request.data,
+           "data_type": str(type(request.data)),
+           "content_type": request.content_type,
+           "body": request.body.decode("utf-8", errors="ignore")
         })
-
 
     @action(detail=False, methods=['post'])
     def send_otp(self, request):
