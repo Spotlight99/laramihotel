@@ -50,7 +50,7 @@ class RoomViewSet(viewsets.ModelViewSet):
             check_out__gt=check_in_date,
             status__in=['CONFIRMED', 'CHECKED_IN']
         )
-        rooms = rooms.exclude(roombooking__in=conflicting_bookings)
+        rooms = rooms.exclude(bookings__in=conflicting_bookings)
         
         serializer = RoomDetailSerializer(rooms, many=True)
         return Response(serializer.data)

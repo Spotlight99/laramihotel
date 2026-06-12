@@ -18,6 +18,11 @@ class AuthViewSet(viewsets.ViewSet):
     permission_classes = [AllowAny]
 
     def get_supabase_client(self) -> Client:
+        if not settings.SUPABASE_URL or not settings.SUPABASE_KEY:
+            raise Exception(
+                "SUPABASE_URL or SUPABASE_KEY is not configured in environment variables."
+            )
+
         return create_client(
             settings.SUPABASE_URL,
             settings.SUPABASE_KEY
@@ -194,12 +199,13 @@ class AuthViewSet(viewsets.ViewSet):
             supabase = self.get_supabase_client()
 
             res = supabase.auth.refresh_session(refresh_token)
-           
+
             if not res.session:
                 return Response(
                     {"error": "Failed to refresh session"},
                     status=status.HTTP_401_UNAUTHORIZED
                 )
+
             return Response({
                 "access_token": res.session.access_token,
                 "refresh_token": res.session.refresh_token

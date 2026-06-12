@@ -24,7 +24,8 @@ class RoomBooking(models.Model):
     guest_id = models.CharField(max_length=100, blank=True)  # Supabase user ID
     
     # Booking Details
-    room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, 
+                             related_name='bookings')
     check_in = models.DateField()
     check_out = models.DateField()
     number_of_guests = models.IntegerField(default=1)

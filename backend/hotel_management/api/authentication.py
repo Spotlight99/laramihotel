@@ -1,8 +1,11 @@
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
-from django.contrib.auth.models import User, AnonymousUser
+from django.contrib.auth.models import User
 import jwt
 from django.conf import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 class SupabaseAuthentication(TokenAuthentication):
     """
@@ -59,7 +62,10 @@ class SupabaseAuthentication(TokenAuthentication):
             raise AuthenticationFailed('Invalid token')
         except jwt.ExpiredSignatureError:
             raise AuthenticationFailed('Token expired')
+        except AuthenticationFailed:
+            raise
         except Exception as e:
+            logger.error(f'Authentication failed: {str(e)}')
             raise AuthenticationFailed(f'Authentication failed: {str(e)}')
     
     @staticmethod

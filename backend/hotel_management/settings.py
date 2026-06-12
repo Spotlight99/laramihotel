@@ -105,3 +105,29 @@ SUPABASE_SERVICE_KEY = config('SUPABASE_SERVICE_KEY', default='')
 # WhatsApp Configuration
 MANAGER_WHATSAPP = config('MANAGER_WHATSAPP', default='2348146800508')
 HOTEL_CURRENCY = config('HOTEL_CURRENCY', default='NGN')
+
+LOGGING = {
+"version": 1,
+"disable_existing_loggers": False,
+"handlers": {
+"console": {
+"class": "logging.StreamHandler",
+},
+},
+"root": {
+"handlers": ["console"],
+"level": "WARNING",
+},
+"loggers": {
+"django": {
+"handlers": ["console"],
+"level": "ERROR",
+"propagate": False,
+},
+"hotel_management": {
+"handlers": ["console"],
+"level": "DEBUG",
+"propagate": False,
+},
+},
+}
