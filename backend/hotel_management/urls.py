@@ -3,7 +3,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
-from backend.hotel_management.rooms.views import debug_rooms
+from hotel_management.rooms.views import debug_rooms
 
 
 
