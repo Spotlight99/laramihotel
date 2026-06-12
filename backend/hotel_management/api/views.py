@@ -6,10 +6,10 @@ from supabase import create_client, Client
 from django.conf import settings
 
 class AuthViewSet(viewsets.ViewSet):
-"""
-API endpoint for Supabase authentication.
-Handles signup, login, and OTP verification.
-"""
+    """
+    API endpoint for Supabase authentication.
+    Handles signup, login, and OTP verification.
+    """
 
 permission_classes = [AllowAny]
 def get_supabase_client(self) -> Client:
