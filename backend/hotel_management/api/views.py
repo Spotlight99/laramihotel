@@ -54,14 +54,12 @@ class AuthViewSet(viewsets.ViewSet):
                 {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
     @action(detail=False, methods=['post'])
     def login(self, request):
         return Response({
-           "request_data": request.data,
-           "data_type": str(type(request.data)),
-           "content_type": request.content_type,
-           "body": request.body.decode("utf-8", errors="ignore")
+            "request_data": request.data,
+            "data_type": str(type(request.data)),
+            "content_type": request.content_type,
         })
 
     @action(detail=False, methods=['post'])
