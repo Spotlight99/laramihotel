@@ -4,7 +4,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
-from supabase import create_client, Client
+from supabase.client import create_client, Client
 from django.conf import settings
 
 
@@ -44,12 +44,16 @@ class AuthViewSet(viewsets.ViewSet):
                 "email": email,
                 "password": password
             })
-
-            return Response({
-                "user_id": res.user.id,
-                "email": res.user.email,
-                "message": "Sign up successful. Please check your email for verification."
-            }, status=status.HTTP_201_CREATED)
+        if not res.user:
+            return Response(
+                {"error": "No user returned from Supabase. Please check your Supabase configuration."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return Response({
+            "user_id": res.user.id,
+            "email": res.user.email,
+            "message": "Sign up successful. Please check your email for verification."
+        }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             return Response(
@@ -57,24 +61,49 @@ class AuthViewSet(viewsets.ViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-    import json
     @action(detail=False, methods=['post'])
     def login(self, request):
 
-        raw_json = request.data.get("_content")
+        import json
 
-        if raw_json:
-            data = json.loads(raw_json)
+        # Handle DRF Browsable API JSON submissions
+        if request.data.get("_content"):
+            data = json.loads(request.data.get("_content"))
+            email = data.get("email")
+            password = data.get("password")
+        else:
+            email = request.data.get("email")
+            password = request.data.get("password")
 
-            return Response({
-               "email": data.get("email"),
-               "password": data.get("password"),
-               "message": "JSON parsed successfully"
+        if not email or not password:
+            return Response(
+                {"error": "Email and password are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            supabase = self.get_supabase_client()
+
+            res = supabase.auth.sign_in_with_password({
+                "email": email,
+                "password": password
             })
 
-        return Response({
-            "error": "No JSON received"
-      })
+            return Response({
+                "access_token": res.session.access_token,
+                "refresh_token": res.session.refresh_token,
+                "user": {
+                    "id": res.user.id,
+                    "email": res.user.email
+                }
+            })
+
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+    
 
     @action(detail=False, methods=['post'])
     def send_otp(self, request):
