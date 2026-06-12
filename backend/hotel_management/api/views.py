@@ -58,10 +58,10 @@ class AuthViewSet(viewsets.ViewSet):
     
     @action(detail=False, methods=['post'])
     def login(self, request):
-    return Response({
-        "request_data": request.data,
-        "content_type": request.content_type,
-    })
+        return Response({
+            "request_data": request.data,
+            "content_type": request.content_type,
+        })
     
     @action(detail=False, methods=['post'])
     def send_otp(self, request):
