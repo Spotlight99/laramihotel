@@ -1,6 +1,6 @@
 from django.db import models
 from hotel_management.rooms.models import Room
-
+from decimal import Decimal
 BOOKING_STATUS = [
     ('PENDING', 'Pending'),
     ('CONFIRMED', 'Confirmed'),
@@ -34,7 +34,7 @@ class RoomBooking(models.Model):
     status = models.CharField(max_length=20, choices=BOOKING_STATUS, default='PENDING')
     
     # Payment Information
-    total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     number_of_nights = models.IntegerField(default=1)
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS, default='PENDING')
     payment_reference = models.CharField(max_length=100, blank=True)  # Paystack or WhatsApp reference
@@ -65,8 +65,8 @@ class Invoice(models.Model):
     
     # Items
     room_charge = models.DecimalField(max_digits=10, decimal_places=2)
-    additional_charges = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    additional_charges = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    discount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     
     # Payment

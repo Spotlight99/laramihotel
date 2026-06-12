@@ -4,7 +4,8 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
-from supabase.client import create_client, Client
+
+from supabase import create_client, Client
 from django.conf import settings
 
 
@@ -17,7 +18,6 @@ class AuthViewSet(viewsets.ViewSet):
     permission_classes = [AllowAny]
 
     def get_supabase_client(self) -> Client:
-        """Get Supabase client"""
         return create_client(
             settings.SUPABASE_URL,
             settings.SUPABASE_KEY
@@ -25,15 +25,12 @@ class AuthViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['post'])
     def signup(self, request):
-        """
-        Sign up new guest with email and password
-        """
         email = request.data.get('email')
         password = request.data.get('password')
 
         if not email or not password:
             return Response(
-                {'error': 'Email and password are required'},
+                {"error": "Email and password are required"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -44,16 +41,23 @@ class AuthViewSet(viewsets.ViewSet):
                 "email": email,
                 "password": password
             })
-        if not res.user:
+
+            if not res.user:
+                return Response(
+                    {
+                        "error": "No user returned from Supabase. Check your Supabase configuration."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             return Response(
-                {"error": "No user returned from Supabase. Please check your Supabase configuration."},
-                status=status.HTTP_400_BAD_REQUEST
+                {
+                    "user_id": res.user.id,
+                    "email": res.user.email,
+                    "message": "Sign up successful. Please check your email for verification."
+                },
+                status=status.HTTP_201_CREATED
             )
-        return Response({
-            "user_id": res.user.id,
-            "email": res.user.email,
-            "message": "Sign up successful. Please check your email for verification."
-        }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             return Response(
@@ -64,9 +68,6 @@ class AuthViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'])
     def login(self, request):
 
-        import json
-
-        # Handle DRF Browsable API JSON submissions
         if request.data.get("_content"):
             data = json.loads(request.data.get("_content"))
             email = data.get("email")
@@ -89,6 +90,12 @@ class AuthViewSet(viewsets.ViewSet):
                 "password": password
             })
 
+            if not res.user or not res.session:
+                return Response(
+                    {"error": "Invalid login response from Supabase"},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+
             return Response({
                 "access_token": res.session.access_token,
                 "refresh_token": res.session.refresh_token,
@@ -103,18 +110,14 @@ class AuthViewSet(viewsets.ViewSet):
                 {"error": str(e)},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-    
 
     @action(detail=False, methods=['post'])
     def send_otp(self, request):
-        """
-        Send OTP for password-less login
-        """
         email = request.data.get('email')
 
         if not email:
             return Response(
-                {'error': 'Email is required'},
+                {"error": "Email is required"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -128,7 +131,7 @@ class AuthViewSet(viewsets.ViewSet):
             return Response({
                 "message": "OTP sent to your email",
                 "email": email
-            }, status=status.HTTP_200_OK)
+            })
 
         except Exception as e:
             return Response(
@@ -138,15 +141,12 @@ class AuthViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['post'])
     def verify_otp(self, request):
-        """
-        Verify OTP and get session
-        """
         email = request.data.get('email')
         token = request.data.get('token')
 
         if not email or not token:
             return Response(
-                {'error': 'Email and token are required'},
+                {"error": "Email and token are required"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -159,6 +159,12 @@ class AuthViewSet(viewsets.ViewSet):
                 "type": "email"
             })
 
+            if not res.user or not res.session:
+                return Response(
+                    {"error": "OTP verification failed"},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+
             return Response({
                 "access_token": res.session.access_token,
                 "refresh_token": res.session.refresh_token,
@@ -166,7 +172,7 @@ class AuthViewSet(viewsets.ViewSet):
                     "id": res.user.id,
                     "email": res.user.email
                 }
-            }, status=status.HTTP_200_OK)
+            })
 
         except Exception as e:
             return Response(
@@ -176,14 +182,11 @@ class AuthViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['post'])
     def refresh_token(self, request):
-        """
-        Refresh access token
-        """
         refresh_token = request.data.get('refresh_token')
 
         if not refresh_token:
             return Response(
-                {'error': 'Refresh token is required'},
+                {"error": "Refresh token is required"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -191,11 +194,16 @@ class AuthViewSet(viewsets.ViewSet):
             supabase = self.get_supabase_client()
 
             res = supabase.auth.refresh_session(refresh_token)
-
+           
+            if not res.session:
+                return Response(
+                    {"error": "Failed to refresh session"},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
             return Response({
                 "access_token": res.session.access_token,
                 "refresh_token": res.session.refresh_token
-            }, status=status.HTTP_200_OK)
+            })
 
         except Exception as e:
             return Response(

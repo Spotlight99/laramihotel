@@ -16,7 +16,7 @@ class RoomBookingViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """Filter bookings by user if authenticated, otherwise return all"""
         if self.request.user.is_authenticated:
-            return RoomBooking.objects.filter(guest_id=self.request.user.id)
+            return RoomBooking.objects.filter(guest_id=str(self.request.user.pk))
         return RoomBooking.objects.none()
     
     def create(self, request, *args, **kwargs):
@@ -34,7 +34,7 @@ class RoomBookingViewSet(viewsets.ModelViewSet):
             guest_name=serializer.validated_data['guest_name'],
             guest_email=serializer.validated_data['guest_email'],
             guest_phone=serializer.validated_data['guest_phone'],
-            guest_id=request.user.id if request.user.is_authenticated else '',
+            guest_id=str(request.user.pk) if request.user.is_authenticated else '',
             room=room,
             check_in=serializer.validated_data['check_in'],
             check_out=serializer.validated_data['check_out'],
@@ -178,7 +178,8 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            return Invoice.objects.filter(booking__guest_id=self.request.user.id)
+            return Invoice.objects.filter(
+                booking__guest_id=str(self.request.user.pk))
         return Invoice.objects.none()
 
 class HouseKeepingViewSet(viewsets.ModelViewSet):
