@@ -7,11 +7,20 @@ from hotel_management.rooms.views import debug_rooms
 
 
 
+from django.http import JsonResponse
+
+def home(request):
+    return JsonResponse({
+        "message": "Larami Hotel API",
+        "status": "online"
+    })
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/', include('hotel_management.api.urls')),
-    path('api/rooms/', include('hotel_management.rooms.urls')),
-    path('api/bookings/', include('hotel_management.bookings.urls')),
+    path("", home),
+    path("admin/", admin.site.urls),
+    path("api/", include("hotel_management.api.urls")),
+    path("api/rooms/", include("hotel_management.rooms.urls")),
+    path("api/bookings/", include("hotel_management.bookings.urls")),
 ]
 
 
