@@ -57,40 +57,12 @@ class AuthViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['post'])
     def login(self, request):
-        """
-        Login with email and password
-        """
-        email = request.data.get('email')
-        password = request.data.get('password')
+        return Response({
+            "debug": "LOGIN METHOD HIT",
+            "email": request.data.get("email"),
+            "password": request.data.get("password"),
+        })
 
-        if not email or not password:
-            return Response(
-                {'error': 'Email and password are required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            supabase = self.get_supabase_client()
-
-            res = supabase.auth.sign_in_with_password({
-                "email": email,
-                "password": password
-            })
-
-            return Response({
-                "access_token": res.session.access_token,
-                "refresh_token": res.session.refresh_token,
-                "user": {
-                    "id": res.user.id,
-                    "email": res.user.email
-                }
-            }, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
 
     @action(detail=False, methods=['post'])
     def send_otp(self, request):
