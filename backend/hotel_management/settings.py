@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from decouple import config
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -54,15 +55,14 @@ TEMPLATES = [
 WSGI_APPLICATION = 'hotel_management.wsgi.application'
 
 # Database - Using Supabase PostgreSQL
+import dj_database_url
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DATABASE_NAME', default='larami_hotel'),
-        'USER': config('DATABASE_USER', default='postgres'),
-        'PASSWORD': config('DATABASE_PASSWORD', default=''),
-        'HOST': config('DATABASE_HOST', default='localhost'),
-        'PORT': config('DATABASE_PORT', default='5432'),
-    }
+    "default": dj_database_url.parse(
+        str(config("DATABASE_URL")),
+        conn_max_age=600,
+        ssl_require=True,
+    )
 }
 
 AUTH_PASSWORD_VALIDATORS = [
