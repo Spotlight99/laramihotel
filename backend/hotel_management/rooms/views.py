@@ -11,11 +11,21 @@ from rest_framework.decorators import api_view
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def debug_rooms(request):
-    return Response({
-        "rooms": Room.objects.count(),
-        "hotels": Hotel.objects.count(),
-    })
+    try:
+        rooms = Room.objects.count()
+        hotels = Hotel.objects.count()
 
+        return Response({
+            "status": "success",
+            "rooms": rooms,
+            "hotels": hotels,
+        })
+
+    except Exception as e:
+        return Response({
+            "status": "error",
+            "error": str(e)
+        })
 class RoomViewSet(viewsets.ModelViewSet):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
