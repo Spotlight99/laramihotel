@@ -84,7 +84,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'api.authentication.SupabaseAuthentication',
+        'hotel_management.api.authentication.SupabaseAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -98,9 +98,9 @@ CORS_ALLOWED_ORIGINS = str(config('FRONTEND_URL', default='http://localhost:3000
 CORS_ALLOW_CREDENTIALS = True
 
 # Supabase Configuration
-SUPABASE_URL = config('SUPABASE_URL')
-SUPABASE_KEY = config('SUPABASE_KEY')
-SUPABASE_SERVICE_KEY = config('SUPABASE_SERVICE_KEY')
+SUPABASE_URL = config('SUPABASE_URL', default='')
+SUPABASE_KEY = config('SUPABASE_KEY', default='')
+SUPABASE_SERVICE_KEY = config('SUPABASE_SERVICE_KEY', default='')
 
 # WhatsApp Configuration
 MANAGER_WHATSAPP = config('MANAGER_WHATSAPP', default='2348146800508')

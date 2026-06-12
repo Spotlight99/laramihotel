@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import RoomBooking, Invoice, HouseKeeping
-from rooms.serializers import RoomSerializer
+from hotel_management.rooms.serializers import RoomSerializer
 
 class RoomBookingSerializer(serializers.ModelSerializer):
     room = RoomSerializer(read_only=True)

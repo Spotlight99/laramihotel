@@ -34,7 +34,7 @@ class RoomViewSet(viewsets.ModelViewSet):
             rooms = rooms.filter(room_type=room_type)
         
         # Filter out rooms with conflicting bookings
-        from bookings.models import RoomBooking
+        from hotel_management.bookings.models import RoomBooking
         conflicting_bookings = RoomBooking.objects.filter(
             check_in__lt=check_out_date,
             check_out__gt=check_in_date,

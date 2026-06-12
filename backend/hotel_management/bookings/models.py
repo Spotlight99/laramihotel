@@ -1,5 +1,5 @@
 from django.db import models
-from rooms.models import Room
+from hotel_management.rooms.models import Room
 
 BOOKING_STATUS = [
     ('PENDING', 'Pending'),

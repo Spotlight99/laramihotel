@@ -6,7 +6,7 @@ from datetime import datetime
 from django.db.models import Q
 from .models import RoomBooking, Invoice, HouseKeeping
 from .serializers import RoomBookingSerializer, InvoiceSerializer, HouseKeepingSerializer
-from rooms.models import Room
+from hotel_management.rooms.models import Room
 import uuid
 
 class RoomBookingViewSet(viewsets.ModelViewSet):
