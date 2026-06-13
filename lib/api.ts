@@ -66,7 +66,7 @@ export const roomsAPI = {
 
   console.log("RAW ROOM DATA:", data);
 
-  return data;
+  return data.results;
 },
 
   getHotelInfo: async () => {
