@@ -40,21 +40,29 @@ export default function BookingPage() {
     console.log("🔍 RAW ROOMS:", rooms);
     console.log("🔍 ROOMS TYPE:", typeof rooms);
     console.log("🔍 IS ARRAY:", Array.isArray(rooms));
-    console.log("🔍 ROOMS KEYS:", rooms ? Object.keys(rooms) : "rooms is null/undefined");
-
-    if (!Array.isArray(rooms)) {
-      console.error("❌ API did not return an array. Got:", typeof rooms, rooms);
+    
+    // Ensure rooms is always an array
+    let roomsArray: any[] = [];
+    
+    if (Array.isArray(rooms)) {
+      roomsArray = rooms;
+      console.log("✅ Rooms is already an array");
+    } else if (rooms && typeof rooms === 'object' && Array.isArray(rooms.results)) {
+      roomsArray = rooms.results;
+      console.log("✅ Extracted rooms from results property");
+    } else {
+      console.error("❌ ERROR: rooms is not an array and has no results property", { rooms });
       setRoom(null);
       return;
     }
 
-    console.log("🔍 Rooms is an array with length:", rooms.length);
+    console.log("✅ Final roomsArray length:", roomsArray.length);
 
-    const selected = rooms.find(
+    const selected = roomsArray.find(
       (r: any) => r.id === parseInt(roomId!)
     );
 
-    console.log("🔍 SELECTED ROOM:", selected);
+    console.log("✅ SELECTED ROOM:", selected);
 
     setRoom(selected);
   } catch (error: any) {
