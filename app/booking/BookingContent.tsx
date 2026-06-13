@@ -34,22 +34,9 @@ export default function BookingPage() {
   try {
     const rooms = await roomsAPI.getAll();
 
-    console.log("rooms =", rooms);
-    console.log("Array.isArray =", Array.isArray(rooms));
-    console.log("typeof =", typeof rooms);
+    console.log("ROOMS:", rooms);
+    console.log("IS ARRAY:", Array.isArray(rooms));
 
-    if (!Array.isArray(rooms)) {
-      console.error("NOT AN ARRAY", rooms);
-      return;
-    }
-
-    const selected = rooms.find(
-      (r) => r.id === parseInt(roomId!)
-    );
-
-    console.log("selected =", selected);
-
-    setRoom(selected);
   } catch (error) {
     console.error("Failed to fetch room:", error);
   }
