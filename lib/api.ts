@@ -65,8 +65,17 @@ export const roomsAPI = {
   const data = await res.json();
 
   console.log("RAW ROOM DATA:", data);
+  console.log("DATA TYPE:", typeof data);
+  console.log("DATA IS ARRAY:", Array.isArray(data));
+  console.log("DATA.RESULTS:", data.results);
+  console.log("DATA.RESULTS IS ARRAY:", Array.isArray(data.results));
 
-  return data.results;
+  // Safeguard: If data is already an array, return it. Otherwise return results.
+  if (Array.isArray(data)) {
+    return data;
+  }
+  
+  return data.results || [];
 },
 
   getHotelInfo: async () => {
