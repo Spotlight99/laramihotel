@@ -1,5 +1,13 @@
 // API configuration
+// CRITICAL: NEXT_PUBLIC_API_URL must be set on Vercel
+// Local: http://localhost:8000/api
+// Production: https://laramihotel.onrender.com/api
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+
+// Debug log to verify the API URL is correct
+if (typeof window !== 'undefined') {
+  console.log('🔧 API_BASE_URL:', API_BASE_URL);
+}
 
 
 interface BookingRequest {
