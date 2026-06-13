@@ -31,73 +31,47 @@ export default function BookingPage() {
   }, [roomId]);
 
   const fetchRoom = async () => {
-  console.log("=== FETCH ROOM START ===");
+  console.log("🔥 fetchRoom called, roomId:", roomId);
+  
   try {
-    console.log("1️⃣ roomId from params:", roomId);
+    // Fetch directly to bypass any API layer issues
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+    console.log("🔥 API URL:", apiUrl);
     
-    console.log("2️⃣ Calling roomsAPI.getAll()...");
-    const rooms = await roomsAPI.getAll();
+    const res = await fetch(`${apiUrl}/rooms/?t=${Date.now()}`, { cache: 'no-store' });
+    console.log("🔥 Fetch response status:", res.status);
     
-    console.log("3️⃣ Response received from API");
-    console.log("   - Raw response:", rooms);
-    console.log("   - Type:", typeof rooms);
-    console.log("   - Constructor:", rooms?.constructor?.name);
-    console.log("   - Is Array?:", Array.isArray(rooms));
-    console.log("   - Length:", rooms?.length);
-    console.log("   - Keys:", rooms ? Object.keys(rooms) : "null/undefined");
-
-    // Force it to be an array no matter what
-    let roomsArray: any[] = [];
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     
-    if (Array.isArray(rooms)) {
-      roomsArray = rooms;
-      console.log("✅ Step 1: rooms IS an array");
-    } else if (rooms?.results && Array.isArray(rooms.results)) {
-      roomsArray = rooms.results;
-      console.log("✅ Step 2: extracted rooms.results array");
-    } else if (!rooms) {
-      console.error("❌ FATAL: rooms is null or undefined!");
-      setRoom(null);
-      return;
+    const data = await res.json();
+    console.log("🔥 Raw API response:", data);
+    
+    // Extract rooms array - handle both formats
+    let roomsList: any[] = [];
+    if (Array.isArray(data)) {
+      roomsList = data;
+      console.log("🔥 Data is array");
+    } else if (data?.results && Array.isArray(data.results)) {
+      roomsList = data.results;
+      console.log("🔥 Extracted from data.results");
     } else {
-      console.error("❌ FATAL: rooms is unexpected type:", { rooms });
+      console.error("🔥 ERROR: Unexpected response format", data);
       setRoom(null);
       return;
     }
-
-    console.log("4️⃣ roomsArray ready");
-    console.log("   - Type:", Array.isArray(roomsArray));
-    console.log("   - Length:", roomsArray.length);
-    console.log("   - Sample item:", roomsArray[0]);
-
-    if (!Array.isArray(roomsArray)) {
-      console.error("❌ CRITICAL: roomsArray is NOT an array after extraction!");
-      setRoom(null);
-      return;
-    }
-
-    console.log("5️⃣ Searching for room with id:", roomId);
-    const roomIdNum = parseInt(roomId!);
-    console.log("   - Parsed roomId:", roomIdNum, typeof roomIdNum);
-
-    const selected = roomsArray.find((r: any) => {
-      console.log("   - Checking room:", r?.id, "===", roomIdNum, "?", r?.id === roomIdNum);
-      return r?.id === roomIdNum;
-    });
-
-    console.log("6️⃣ Search complete");
-    console.log("   - Found:", selected ? "YES" : "NO");
-    console.log("   - Selected room:", selected);
-
-    setRoom(selected || null);
-    console.log("=== FETCH ROOM SUCCESS ===");
-
-  } catch (error: any) {
-    console.error("=== FETCH ROOM ERROR ===");
-    console.error("Error type:", error?.name);
-    console.error("Error message:", error?.message);
-    console.error("Error stack:", error?.stack);
-    console.error("Full error object:", error);
+    
+    console.log("🔥 Rooms list:", roomsList, "length:", roomsList.length);
+    
+    // Find room
+    const roomNum = parseInt(roomId!, 10);
+    console.log("🔥 Looking for room id:", roomNum);
+    
+    const found = roomsList.find((r: any) => r.id === roomNum);
+    console.log("🔥 Found room:", found);
+    
+    setRoom(found || null);
+  } catch (err: any) {
+    console.error("🔥 ERROR:", err?.message || err);
     setRoom(null);
   }
 };
