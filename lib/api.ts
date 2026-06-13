@@ -64,35 +64,54 @@ export const roomsAPI = {
   },
 
   getAll: async () => {
-  const res = await fetch(`${API_BASE_URL}/rooms/?t=${Date.now()}`, {
-    cache: 'no-store'
-  });
+  try {
+    console.log("📡 roomsAPI.getAll() called");
+    console.log("   - API_BASE_URL:", API_BASE_URL);
+    
+    const url = `${API_BASE_URL}/rooms/?t=${Date.now()}`;
+    console.log("   - Full URL:", url);
+    
+    const res = await fetch(url, {
+      cache: 'no-store',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
 
-  if (!res.ok) {
-    throw new Error("Failed to fetch rooms");
+    console.log("   - Response status:", res.status, res.statusText);
+    
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    }
+
+    const data = await res.json();
+    console.log("   - JSON parsed successfully");
+    console.log("   - Data type:", typeof data);
+    console.log("   - Is Array?:", Array.isArray(data));
+    console.log("   - Has results?:", !!data?.results);
+    console.log("   - Raw data:", data);
+
+    // Determine what we got and extract the array
+    let result: any[] = [];
+    
+    if (Array.isArray(data)) {
+      result = data;
+      console.log("✅ roomsAPI: Data is array, using directly");
+    } else if (data?.results && Array.isArray(data.results)) {
+      result = data.results;
+      console.log("✅ roomsAPI: Extracted results array");
+    } else {
+      console.error("❌ roomsAPI: Unexpected data format", data);
+      result = [];
+    }
+    
+    console.log("✅ roomsAPI returning array with length:", result.length);
+    return result;
+    
+  } catch (error: any) {
+    console.error("❌ roomsAPI.getAll() error:", error?.message);
+    throw error;
   }
-
-  const data = await res.json();
-
-  console.log("🔍 RAW ROOM DATA:", data);
-  console.log("🔍 DATA TYPE:", typeof data);
-  console.log("🔍 DATA IS ARRAY:", Array.isArray(data));
-  console.log("🔍 DATA.RESULTS:", data?.results);
-  console.log("🔍 DATA.RESULTS IS ARRAY:", Array.isArray(data?.results));
-
-  // Extract array from paginated response
-  if (Array.isArray(data)) {
-    console.log("✅ Data is an array, returning directly");
-    return data;
-  }
-  
-  if (data && data.results && Array.isArray(data.results)) {
-    console.log("✅ Extracted results array from paginated response");
-    return data.results;
-  }
-  
-  console.error("❌ ERROR: Could not extract array from data:", data);
-  return [];
 },
 
   getHotelInfo: async () => {
