@@ -55,10 +55,12 @@ export const roomsAPI = {
   },
 
   getAll: async () => {
-    const res = await fetch(`${API_BASE_URL}/rooms/`);
-    if (!res.ok) throw new Error('Failed to fetch rooms');
-    return res.json();
-  },
+  const res = await fetch(`${API_BASE_URL}/rooms/`);
+  if (!res.ok) throw new Error('Failed to fetch rooms');
+
+  const data = await res.json();
+  return data.results;
+},
 
   getHotelInfo: async () => {
     const res = await fetch(`${API_BASE_URL}/rooms/hotel_info/`);
