@@ -34,14 +34,25 @@ export default function BookingPage() {
   try {
     const rooms = await roomsAPI.getAll();
 
-    console.log("ROOMS:", rooms);
+    console.log("RAW ROOMS:", rooms);
     console.log("IS ARRAY:", Array.isArray(rooms));
 
+    if (!Array.isArray(rooms)) {
+      console.error("API did not return an array:", rooms);
+      return;
+    }
+
+    const selected = rooms.find(
+      (r: any) => r.id === parseInt(roomId!)
+    );
+
+    console.log("SELECTED ROOM:", selected);
+
+    setRoom(selected);
   } catch (error) {
     console.error("Failed to fetch room:", error);
   }
 };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
