@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/lib/authContext";
+
 
 export const metadata: Metadata = {
   title: "Larami Holiday Hotel | Port Harcourt",
@@ -26,7 +28,9 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="font-body antialiased">{children}</body>
+      <body className="font-body antialiased">
+        <AuthProvider> {children} </AuthProvider>
+        </body>
     </html>
   );
 }
