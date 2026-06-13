@@ -31,14 +31,23 @@ export default function BookingPage() {
   }, [roomId]);
 
   const fetchRoom = async () => {
-    try {
-      const rooms = await roomsAPI.getAll();
-      const selected = rooms.find((r: any) => r.id === parseInt(roomId!));
-      setRoom(selected);
-    } catch (error) {
-      console.error('Failed to fetch room:', error);
-    }
-  };
+  try {
+    const rooms = await roomsAPI.getAll();
+
+    console.log("ROOMS FROM API:", rooms);
+    console.log("ROOM ID FROM URL:", roomId);
+
+    const selected = rooms.find(
+      (r: any) => r.id === parseInt(roomId!)
+    );
+
+    console.log("SELECTED ROOM:", selected);
+
+    setRoom(selected);
+  } catch (error) {
+    console.error("Failed to fetch room:", error);
+  }
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
