@@ -64,7 +64,9 @@ export const roomsAPI = {
   },
 
   getAll: async () => {
-  const res = await fetch(`${API_BASE_URL}/rooms/`);
+  const res = await fetch(`${API_BASE_URL}/rooms/?t=${Date.now()}`, {
+    cache: 'no-store'
+  });
 
   if (!res.ok) {
     throw new Error("Failed to fetch rooms");
@@ -72,18 +74,25 @@ export const roomsAPI = {
 
   const data = await res.json();
 
-  console.log("RAW ROOM DATA:", data);
-  console.log("DATA TYPE:", typeof data);
-  console.log("DATA IS ARRAY:", Array.isArray(data));
-  console.log("DATA.RESULTS:", data.results);
-  console.log("DATA.RESULTS IS ARRAY:", Array.isArray(data.results));
+  console.log("🔍 RAW ROOM DATA:", data);
+  console.log("🔍 DATA TYPE:", typeof data);
+  console.log("🔍 DATA IS ARRAY:", Array.isArray(data));
+  console.log("🔍 DATA.RESULTS:", data?.results);
+  console.log("🔍 DATA.RESULTS IS ARRAY:", Array.isArray(data?.results));
 
-  // Safeguard: If data is already an array, return it. Otherwise return results.
+  // Extract array from paginated response
   if (Array.isArray(data)) {
+    console.log("✅ Data is an array, returning directly");
     return data;
   }
   
-  return data.results || [];
+  if (data && data.results && Array.isArray(data.results)) {
+    console.log("✅ Extracted results array from paginated response");
+    return data.results;
+  }
+  
+  console.error("❌ ERROR: Could not extract array from data:", data);
+  return [];
 },
 
   getHotelInfo: async () => {

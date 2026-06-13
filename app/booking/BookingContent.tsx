@@ -32,43 +32,27 @@ export default function BookingPage() {
 
   const fetchRoom = async () => {
   try {
-    console.log("🔍 Starting fetchRoom...");
-    console.log("🔍 roomId:", roomId);
+    console.log("🔍 Starting fetchRoom, roomId:", roomId);
     
     const rooms = await roomsAPI.getAll();
+    console.log("🔍 Got rooms from API:", rooms);
+    console.log("🔍 Type check - is Array?:", Array.isArray(rooms));
 
-    console.log("🔍 RAW ROOMS:", rooms);
-    console.log("🔍 ROOMS TYPE:", typeof rooms);
-    console.log("🔍 IS ARRAY:", Array.isArray(rooms));
-    
-    // Ensure rooms is always an array
-    let roomsArray: any[] = [];
-    
-    if (Array.isArray(rooms)) {
-      roomsArray = rooms;
-      console.log("✅ Rooms is already an array");
-    } else if (rooms && typeof rooms === 'object' && Array.isArray(rooms.results)) {
-      roomsArray = rooms.results;
-      console.log("✅ Extracted rooms from results property");
-    } else {
-      console.error("❌ ERROR: rooms is not an array and has no results property", { rooms });
+    // Simple defensive check
+    if (!Array.isArray(rooms)) {
+      console.error("❌ ERROR: rooms is not an array!", { rooms, type: typeof rooms });
       setRoom(null);
       return;
     }
 
-    console.log("✅ Final roomsArray length:", roomsArray.length);
+    console.log("✅ Rooms is array with length:", rooms.length);
 
-    const selected = roomsArray.find(
-      (r: any) => r.id === parseInt(roomId!)
-    );
+    const selected = rooms.find((r: any) => r.id === parseInt(roomId!));
+    console.log("✅ Found selected room:", selected);
 
-    console.log("✅ SELECTED ROOM:", selected);
-
-    setRoom(selected);
+    setRoom(selected || null);
   } catch (error: any) {
-    console.error("❌ Failed to fetch room:", error);
-    console.error("❌ Error message:", error?.message);
-    console.error("❌ Error stack:", error?.stack);
+    console.error("❌ Error in fetchRoom:", error?.message);
     setRoom(null);
   }
 };
