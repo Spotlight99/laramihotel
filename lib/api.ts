@@ -1,6 +1,7 @@
 // API configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
+
 interface BookingRequest {
   guest_name: string;
   guest_email: string;

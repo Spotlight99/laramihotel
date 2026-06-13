@@ -97,8 +97,12 @@ REST_FRAMEWORK = {
 }
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS = str(config('FRONTEND_URL', default='http://localhost:3000')).split(',')
+CORS_ALLOWED_ORIGINS = [
+    "https://laramihotel-8x64f43ry.vercel.app",
+    "https://laramihotel.vercel.app",
+]
 CORS_ALLOW_CREDENTIALS = True
+ALLOWED_HOSTS = ["*"]
 
 # Supabase Configuration
 SUPABASE_URL = config('SUPABASE_URL', default='')
