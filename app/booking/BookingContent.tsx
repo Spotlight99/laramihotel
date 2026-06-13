@@ -32,25 +32,36 @@ export default function BookingPage() {
 
   const fetchRoom = async () => {
   try {
+    console.log("🔍 Starting fetchRoom...");
+    console.log("🔍 roomId:", roomId);
+    
     const rooms = await roomsAPI.getAll();
 
-    console.log("RAW ROOMS:", rooms);
-    console.log("IS ARRAY:", Array.isArray(rooms));
+    console.log("🔍 RAW ROOMS:", rooms);
+    console.log("🔍 ROOMS TYPE:", typeof rooms);
+    console.log("🔍 IS ARRAY:", Array.isArray(rooms));
+    console.log("🔍 ROOMS KEYS:", rooms ? Object.keys(rooms) : "rooms is null/undefined");
 
     if (!Array.isArray(rooms)) {
-      console.error("API did not return an array:", rooms);
+      console.error("❌ API did not return an array. Got:", typeof rooms, rooms);
+      setRoom(null);
       return;
     }
+
+    console.log("🔍 Rooms is an array with length:", rooms.length);
 
     const selected = rooms.find(
       (r: any) => r.id === parseInt(roomId!)
     );
 
-    console.log("SELECTED ROOM:", selected);
+    console.log("🔍 SELECTED ROOM:", selected);
 
     setRoom(selected);
-  } catch (error) {
-    console.error("Failed to fetch room:", error);
+  } catch (error: any) {
+    console.error("❌ Failed to fetch room:", error);
+    console.error("❌ Error message:", error?.message);
+    console.error("❌ Error stack:", error?.stack);
+    setRoom(null);
   }
 };
   const handleSubmit = async (e: React.FormEvent) => {
