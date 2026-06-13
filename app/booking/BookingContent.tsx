@@ -32,13 +32,15 @@ export default function BookingPage() {
 
   const fetchRoom = async () => {
   try {
-    const response = await roomsAPI.getAll();
+    const rooms = await roomsAPI.getAll();
 
-    const rooms = response.results || [];
+    console.log("ROOMS:", rooms);
 
     const selected = rooms.find(
       (r: any) => r.id === Number(roomId)
     );
+
+    console.log("SELECTED:", selected);
 
     setRoom(selected);
   } catch (error) {
