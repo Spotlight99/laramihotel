@@ -1,13 +1,65 @@
-// API configuration
-// CRITICAL: NEXT_PUBLIC_API_URL must be set on Vercel
-// Local: http://localhost:8000/api
-// Production: https://laramihotel.onrender.com/api
+// API Configuration - CRITICAL for frontend-backend communication
+// This must match your deployed backend URL
+
+// Environment hierarchy:
+// 1. process.env.NEXT_PUBLIC_API_URL (set by Vercel or .env file)
+// 2. Fallback to development default
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
-// Debug log to verify the API URL is correct
+// Validate API URL configuration on client startup
 if (typeof window !== 'undefined') {
-  console.log('🔧 API_BASE_URL:', API_BASE_URL);
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isLocalhost = API_BASE_URL.includes('localhost');
+  
+  console.log('🔧 API Configuration:', {
+    API_BASE_URL,
+    environment: process.env.NODE_ENV,
+    isLocalhost,
+    timestamp: new Date().toISOString(),
+  });
+  
+  // Warn if using localhost in production
+  if (isProduction && isLocalhost) {
+    console.error('⚠️  CRITICAL: Using localhost in production! This will fail.');
+    console.error('⚠️  Set NEXT_PUBLIC_API_URL in Vercel Environment Variables');
+    console.error('⚠️  Expected: https://your-backend-url/api');
+  }
 }
+
+// Helper function to safely make API requests with error context
+const makeRequest = async (url: string, options: RequestInit = {}) => {
+  try {
+    const response = await fetch(url, options);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.detail || errorJson.error || errorMessage;
+      } catch {
+        // errorText is not JSON, use as is
+        if (errorText) errorMessage = errorText;
+      }
+      
+      console.error(`❌ API Error: ${url}`, {
+        status: response.status,
+        message: errorMessage,
+      });
+      
+      throw new Error(errorMessage);
+    }
+    
+    return response;
+  } catch (error: any) {
+    console.error(`❌ Request failed: ${url}`, {
+      error: error?.message,
+      url,
+    });
+    throw error;
+  }
+};
 
 
 interface BookingRequest {
@@ -58,66 +110,63 @@ export const roomsAPI = {
       check_out: checkOut,
       ...(roomType && { room_type: roomType }),
     });
-    const res = await fetch(`${API_BASE_URL}/rooms/available/?${params}`);
-    if (!res.ok) throw new Error('Failed to fetch available rooms');
-    return res.json();
+    const url = `${API_BASE_URL}/rooms/available/?${params}`;
+    console.log('📡 Fetching available rooms:', { url, checkIn, checkOut, roomType });
+    
+    const res = await makeRequest(url);
+    const data = await res.json();
+    
+    // Handle both array and paginated responses
+    const rooms = Array.isArray(data) ? data : (data?.results || []);
+    console.log('✅ Available rooms fetched:', { count: rooms.length });
+    return rooms;
   },
 
   getAll: async () => {
-  try {
-    console.log("📡 roomsAPI.getAll() called");
-    console.log("   - API_BASE_URL:", API_BASE_URL);
-    
     const url = `${API_BASE_URL}/rooms/?t=${Date.now()}`;
-    console.log("   - Full URL:", url);
+    console.log('📡 Fetching all rooms:', url);
     
-    const res = await fetch(url, {
+    const res = await makeRequest(url, {
       cache: 'no-store',
       headers: {
         'Accept': 'application/json'
       }
     });
 
-    console.log("   - Response status:", res.status, res.statusText);
-    
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    }
-
     const data = await res.json();
-    console.log("   - JSON parsed successfully");
-    console.log("   - Data type:", typeof data);
-    console.log("   - Is Array?:", Array.isArray(data));
-    console.log("   - Has results?:", !!data?.results);
-    console.log("   - Raw data:", data);
+    console.log('📦 Raw API response:', { 
+      dataType: typeof data,
+      isArray: Array.isArray(data),
+      hasResults: !!data?.results,
+    });
 
     // Determine what we got and extract the array
     let result: any[] = [];
     
     if (Array.isArray(data)) {
       result = data;
-      console.log("✅ roomsAPI: Data is array, using directly");
+      console.log('✅ Response is array');
     } else if (data?.results && Array.isArray(data.results)) {
       result = data.results;
-      console.log("✅ roomsAPI: Extracted results array");
+      console.log('✅ Extracted results array');
     } else {
-      console.error("❌ roomsAPI: Unexpected data format", data);
-      result = [];
+      console.error('❌ Unexpected response format from API:', data);
+      throw new Error('Invalid response format from /rooms/ endpoint');
     }
     
-    console.log("✅ roomsAPI returning array with length:", result.length);
+    console.log('✅ All rooms fetched:', { count: result.length });
     return result;
-    
-  } catch (error: any) {
-    console.error("❌ roomsAPI.getAll() error:", error?.message);
-    throw error;
-  }
-},
+  },
 
   getHotelInfo: async () => {
-    const res = await fetch(`${API_BASE_URL}/rooms/hotel_info/`);
-    if (!res.ok) throw new Error('Failed to fetch hotel info');
-    return res.json();
+    const url = `${API_BASE_URL}/rooms/hotel_info/`;
+    console.log('📡 Fetching hotel info:', url);
+    
+    const res = await makeRequest(url);
+    const data = await res.json();
+    
+    console.log('✅ Hotel info fetched');
+    return data;
   },
 };
 
@@ -131,129 +180,175 @@ export const bookingsAPI = {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const res = await fetch(`${API_BASE_URL}/bookings/`, {
+    const url = `${API_BASE_URL}/bookings/`;
+    console.log('📡 Creating booking:', { url, roomId: booking.room_id });
+    
+    const res = await makeRequest(url, {
       method: 'POST',
       headers,
       body: JSON.stringify(booking),
     });
 
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || 'Failed to create booking');
-    }
-    return res.json();
+    const data = await res.json();
+    console.log('✅ Booking created:', { bookingId: data?.id });
+    return data;
   },
 
   search: async (email: string, phone?: string) => {
     const params = new URLSearchParams({ email });
     if (phone) params.append('phone', phone);
     
-    const res = await fetch(`${API_BASE_URL}/bookings/search/?${params}`);
-    if (!res.ok) throw new Error('Failed to search bookings');
-    return res.json();
+    const url = `${API_BASE_URL}/bookings/search/?${params}`;
+    console.log('📡 Searching bookings:', { url, email });
+    
+    const res = await makeRequest(url);
+    const data = await res.json();
+    
+    console.log('✅ Bookings search completed:', { count: data?.length || 0 });
+    return data;
   },
 
   getById: async (id: number, token: string) => {
-    const res = await fetch(`${API_BASE_URL}/bookings/${id}/`, {
+    const url = `${API_BASE_URL}/bookings/${id}/`;
+    console.log('📡 Fetching booking:', { url, id });
+    
+    const res = await makeRequest(url, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
-    if (!res.ok) throw new Error('Failed to fetch booking');
-    return res.json();
+    
+    const data = await res.json();
+    console.log('✅ Booking fetched:', { id: data?.id });
+    return data;
   },
 
   confirmPayment: async (id: number, token: string) => {
-    const res = await fetch(`${API_BASE_URL}/bookings/${id}/confirm_payment/`, {
+    const url = `${API_BASE_URL}/bookings/${id}/confirm_payment/`;
+    console.log('📡 Confirming payment:', { url, id });
+    
+    const res = await makeRequest(url, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });
-    if (!res.ok) throw new Error('Failed to confirm payment');
-    return res.json();
+    
+    const data = await res.json();
+    console.log('✅ Payment confirmed:', { id });
+    return data;
   },
 
   checkIn: async (id: number, token: string) => {
-    const res = await fetch(`${API_BASE_URL}/bookings/${id}/check_in/`, {
+    const url = `${API_BASE_URL}/bookings/${id}/check_in/`;
+    console.log('📡 Checking in booking:', { url, id });
+    
+    const res = await makeRequest(url, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });
-    if (!res.ok) throw new Error('Failed to check in');
-    return res.json();
+    
+    const data = await res.json();
+    console.log('✅ Check-in completed:', { id });
+    return data;
   },
 
   checkOut: async (id: number, token: string) => {
-    const res = await fetch(`${API_BASE_URL}/bookings/${id}/check_out/`, {
+    const url = `${API_BASE_URL}/bookings/${id}/check_out/`;
+    console.log('📡 Checking out booking:', { url, id });
+    
+    const res = await makeRequest(url, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });
-    if (!res.ok) throw new Error('Failed to check out');
-    return res.json();
+    
+    const data = await res.json();
+    console.log('✅ Check-out completed:', { id });
+    return data;
   },
 };
 
 // Auth API
 export const authAPI = {
   signup: async (email: string, password: string, name: string, phone: string) => {
-    const res = await fetch(`${API_BASE_URL}/auth/signup/`, {
+    const url = `${API_BASE_URL}/auth/signup/`;
+    console.log('📡 Signing up user:', { url, email });
+    
+    const res = await makeRequest(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, name, phone }),
     });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error || 'Signup failed');
-    }
-    return res.json();
+    
+    const data = await res.json();
+    console.log('✅ Signup successful:', { email });
+    return data;
   },
 
   login: async (email: string, password: string) => {
-    const res = await fetch(`${API_BASE_URL}/auth/login/`, {
+    const url = `${API_BASE_URL}/auth/login/`;
+    console.log('📡 Logging in user:', { url, email });
+    
+    const res = await makeRequest(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
-    if (!res.ok) {
-      throw new Error('Login failed');
-    }
-    return res.json();
+    
+    const data = await res.json();
+    console.log('✅ Login successful:', { email });
+    return data;
   },
 
   sendOtp: async (email: string) => {
-    const res = await fetch(`${API_BASE_URL}/auth/send_otp/`, {
+    const url = `${API_BASE_URL}/auth/send_otp/`;
+    console.log('📡 Sending OTP:', { url, email });
+    
+    const res = await makeRequest(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
     });
-    if (!res.ok) throw new Error('Failed to send OTP');
-    return res.json();
+    
+    const data = await res.json();
+    console.log('✅ OTP sent:', { email });
+    return data;
   },
 
   verifyOtp: async (email: string, token: string) => {
-    const res = await fetch(`${API_BASE_URL}/auth/verify_otp/`, {
+    const url = `${API_BASE_URL}/auth/verify_otp/`;
+    console.log('📡 Verifying OTP:', { url, email });
+    
+    const res = await makeRequest(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, token }),
     });
-    if (!res.ok) throw new Error('Invalid OTP');
-    return res.json();
+    
+    const data = await res.json();
+    console.log('✅ OTP verified:', { email });
+    return data;
   },
 
   refreshToken: async (refreshToken: string) => {
-    const res = await fetch(`${API_BASE_URL}/auth/refresh_token/`, {
+    const url = `${API_BASE_URL}/auth/refresh_token/`;
+    console.log('📡 Refreshing token:', { url });
+    
+    const res = await makeRequest(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh_token: refreshToken }),
     });
-    if (!res.ok) throw new Error('Token refresh failed');
-    return res.json();
+    
+    const data = await res.json();
+    console.log('✅ Token refreshed');
+    return data;
   },
 };

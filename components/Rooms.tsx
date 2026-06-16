@@ -1,8 +1,22 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useState } from "react";
+import { roomsAPI } from "@/lib/api";
 
-const rooms = [
+interface Room {
+  id: number;
+  room_number: string;
+  room_type: string;
+  price_per_night: number;
+  capacity: number;
+  amenities: string[];
+  description: string;
+  image_url: string;
+}
+
+// Fallback display rooms for when API is unavailable (for UX purposes)
+const FALLBACK_ROOMS = [
   {
     name:    "Standard Room",
     price:   "₦25,000",
@@ -48,6 +62,54 @@ const rooms = [
 ];
 
 export default function Rooms() {
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        console.log('🔄 Fetching rooms for home page display...');
+        const data = await roomsAPI.getAll();
+        console.log('✅ Rooms loaded:', data.length, 'rooms');
+        setRooms(data);
+        setError(null);
+      } catch (err: any) {
+        console.error('❌ Failed to fetch rooms:', err?.message);
+        console.log('⚠️  Using fallback display rooms');
+        setError(err?.message || 'Failed to load rooms');
+        // Show fallback rooms - still functional but not live data
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRooms();
+  }, []);
+
+  // Transform API room data to display format
+  const displayRooms = rooms.length > 0 
+    ? rooms.map((room, index) => ({
+        id: room.id,
+        name: room.room_type,
+        price: `₦${room.price_per_night.toLocaleString()}`,
+        tagline: room.description || `${room.capacity} guest${room.capacity !== 1 ? 's' : ''} max`,
+        image: room.image_url || FALLBACK_ROOMS[index % FALLBACK_ROOMS.length].image,
+        badge: index === 0 ? "Featured" : (index === 1 ? "Popular" : "Available"),
+        badgeColor: index === 0 ? "bg-gold-500" : (index === 1 ? "bg-forest-700" : "bg-forest-600"),
+        features: room.amenities.slice(0, 4).map((amenity) => ({
+          icon: "✓",
+          label: amenity,
+        })),
+        capacity: room.capacity,
+      }))
+    : FALLBACK_ROOMS.map((room, index) => ({
+        ...room,
+        id: index,
+        features: room.features,
+        capacity: 2,
+      }));
+
   return (
     <section id="rooms" className="py-28 bg-cream">
       <div className="max-w-7xl mx-auto px-6">
@@ -65,16 +127,21 @@ export default function Rooms() {
             Our Rooms & Suites
           </h2>
           <p className="text-forest-600 font-body font-light text-base md:text-lg max-w-xl mx-auto">
-            Every room is thoughtfully designed for comfort, equipped with modern
-            amenities and reliable 24/7 power.
+            {loading ? (
+              'Loading rooms...'
+            ) : error ? (
+              <span className="text-red-600">⚠️ Unable to load live rooms. Showing sample rooms below.</span>
+            ) : (
+              'Every room is thoughtfully designed for comfort, equipped with modern amenities and reliable 24/7 power.'
+            )}
           </p>
         </div>
 
         {/* Room cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {rooms.map((room) => (
+          {displayRooms.map((room) => (
             <div
-              key={room.name}
+              key={room.id}
               className="card-lift bg-white rounded-2xl overflow-hidden shadow-md border border-forest-50 flex flex-col"
             >
               {/* Image */}
@@ -135,6 +202,21 @@ export default function Rooms() {
             </div>
           ))}
         </div>
+
+        {/* Loading/Error state */}
+        {loading && (
+          <div className="text-center py-8">
+            <p className="text-forest-600">Loading room information...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="mt-8 p-6 bg-amber-50 border border-amber-200 rounded-lg text-center">
+            <p className="text-forest-600">
+              Currently unable to load live room data. Please use the booking search to check availability or contact us directly.
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );
