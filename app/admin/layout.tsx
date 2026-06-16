@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { supabase, onAuthStateChange } from '@/lib/auth';
+import { isManager } from '@/lib/roles';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -20,13 +21,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       return;
     }
 
-    // Check if user is authenticated
+    // Check if user is authenticated and is a manager
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
         // Redirect to login if not authenticated
         router.push('/admin/login');
+        return;
+      }
+
+      // Check if user is a manager
+      const managerStatus = await isManager(session.user.id);
+      
+      if (!managerStatus) {
+        // Not a manager - redirect to home
+        router.push('/');
         return;
       }
       
@@ -38,11 +48,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (_event, session) => {
         if (!session) {
           router.push('/admin/login');
         } else {
-          setUser(session.user);
+          const managerStatus = await isManager(session.user.id);
+          if (!managerStatus) {
+            router.push('/');
+          } else {
+            setUser(session.user);
+          }
         }
       }
     );
@@ -59,7 +74,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <p className="text-lg font-semibold mb-4">Loading...</p>
+          <p className="text-lg font-semibold mb-4">Verifying access...</p>
         </div>
       </div>
     );
