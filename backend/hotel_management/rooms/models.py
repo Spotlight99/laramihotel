@@ -35,9 +35,9 @@ class Room(models.Model):
     price_per_night = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=ROOM_STATUS, default='AVAILABLE')
     capacity = models.IntegerField(default=2)
-    amenities = models.TextField(blank=True)  # List of amenities like WiFi, AC, TV
-    description = models.TextField(blank=True)
-    image_url = models.URLField(blank=True)
+    amenities = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    image_url = models.URLField(blank=True, null=True, default=None)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

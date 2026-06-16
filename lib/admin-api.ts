@@ -40,8 +40,24 @@ export const makeAuthenticatedRequest = async (
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(error || `HTTP ${response.status}`);
+    const contentType = response.headers.get('content-type');
+    let errorData: any = null;
+    
+    try {
+      if (contentType?.includes('application/json')) {
+        errorData = await response.json();
+      } else {
+        errorData = await response.text();
+      }
+    } catch (e) {
+      errorData = `HTTP ${response.status}`;
+    }
+
+    // Create a proper error message
+    const error = new Error(
+      typeof errorData === 'string' ? errorData : JSON.stringify(errorData)
+    );
+    throw error;
   }
 
   const contentType = response.headers.get('content-type');

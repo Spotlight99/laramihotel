@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.core.files.storage import default_storage
+from django.conf import settings
+from django.urls import reverse
 from .models import Room, Hotel
 from .serializers import RoomSerializer, RoomDetailSerializer, HotelSerializer
 from ..api.authentication import SupabaseAuthentication
@@ -53,6 +55,13 @@ class AdminRoomViewSet(viewsets.ModelViewSet):
         try:
             image_file = request.FILES['image']
             
+            # Validate file size (max 5MB)
+            if image_file.size > 5 * 1024 * 1024:
+                return Response(
+                    {'error': 'Image size must be less than 5MB'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
             # Generate unique filename
             file_ext = os.path.splitext(image_file.name)[1]
             filename = f"rooms/{uuid4()}{file_ext}"
@@ -60,6 +69,12 @@ class AdminRoomViewSet(viewsets.ModelViewSet):
             # Save to storage
             file_path = default_storage.save(filename, image_file)
             file_url = default_storage.url(file_path)
+            
+            # Ensure we have a full URL (handle relative paths)
+            if file_url and not file_url.startswith('http'):
+                # Build full URL for relative paths
+                if file_url.startswith('/'):
+                    file_url = f"{request.scheme}://{request.get_host()}{file_url}"
             
             return Response({
                 'url': file_url,
@@ -69,7 +84,7 @@ class AdminRoomViewSet(viewsets.ModelViewSet):
         
         except Exception as e:
             return Response(
-                {'error': str(e)},
+                {'error': f'Upload failed: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
     

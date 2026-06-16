@@ -21,6 +21,7 @@ export default function RoomsManagement() {
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     room_number: '',
     room_type: 'STANDARD',
@@ -30,6 +31,33 @@ export default function RoomsManagement() {
     description: '',
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
+
+  const formatErrorMessage = (err: any): string => {
+    if (typeof err === 'string') {
+      return err;
+    }
+    
+    if (err instanceof Error) {
+      return err.message;
+    }
+
+    // Handle Django REST Framework error format: {"field": ["error message"]}
+    if (typeof err === 'object') {
+      const errors: string[] = [];
+      for (const [field, messages] of Object.entries(err)) {
+        if (Array.isArray(messages)) {
+          errors.push(`${field}: ${messages.join(', ')}`);
+        } else if (typeof messages === 'string') {
+          errors.push(`${field}: ${messages}`);
+        }
+      }
+      if (errors.length > 0) {
+        return errors.join(' • ');
+      }
+    }
+
+    return 'An unexpected error occurred';
+  };
 
   useEffect(() => {
     fetchRooms();
@@ -50,26 +78,49 @@ export default function RoomsManagement() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
+    setError(null);
     
     try {
-      let imageUrl = '';
-      if (imageFile) {
-        const uploadData = await adminAPI.uploadImage(imageFile);
-        imageUrl = uploadData.url;
-      }
-
-      // Then, save the room
-      const roomData = {
-        ...formData,
+      const roomData: any = {
+        room_number: formData.room_number,
+        room_type: formData.room_type,
         price_per_night: parseFloat(formData.price_per_night),
         capacity: parseInt(formData.capacity),
-        ...(imageUrl && { image_url: imageUrl }),
+        amenities: formData.amenities.trim() || '',
+        description: formData.description.trim() || '',
       };
+
+      // Upload image if selected
+      if (imageFile) {
+        try {
+          console.log('📤 Uploading image:', imageFile.name, `(${(imageFile.size / 1024).toFixed(2)}KB)`);
+          const uploadData = await adminAPI.uploadImage(imageFile);
+          
+          if (!uploadData.url) {
+            throw new Error('Upload succeeded but no URL returned');
+          }
+          
+          console.log('✅ Image uploaded, URL:', uploadData.url);
+          roomData.image_url = uploadData.url;
+        } catch (uploadErr) {
+          const uploadMsg = uploadErr instanceof Error ? uploadErr.message : 'Unknown error';
+          console.error('❌ Image upload failed:', uploadMsg);
+          throw new Error(`Image upload failed: ${uploadMsg}`);
+        }
+      } else {
+        console.log('ℹ️ No image selected, using default fallback');
+        // Don't include image_url if not provided - backend will use fallback
+      }
+
+      console.log('💾 Creating/updating room with data:', roomData);
 
       if (editingId) {
         await adminAPI.updateRoom(editingId, roomData);
+        console.log('✅ Room updated successfully');
       } else {
         await adminAPI.createRoom(roomData);
+        console.log('✅ Room created successfully');
       }
       
       // Refresh rooms and reset form
@@ -78,7 +129,10 @@ export default function RoomsManagement() {
       setError(null);
     } catch (err: any) {
       console.error('❌ Error saving room:', err);
-      setError(err?.message || 'Failed to save room');
+      const friendlyError = formatErrorMessage(err?.message ? JSON.parse(err.message) : err);
+      setError(`Failed to save room: ${friendlyError}`);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -263,14 +317,31 @@ export default function RoomsManagement() {
           <div className="mt-6 flex gap-4">
             <button
               type="submit"
-              className="px-6 py-2 bg-gold-500 hover:bg-gold-600 text-white rounded-lg font-medium transition"
+              disabled={submitting}
+              className={`px-6 py-2 rounded-lg font-medium transition flex items-center gap-2 ${
+                submitting 
+                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                  : 'bg-gold-500 hover:bg-gold-600 text-white'
+              }`}
             >
-              {editingId ? 'Update Room' : 'Create Room'}
+              {submitting ? (
+                <>
+                  <span className="inline-block animate-spin">⟳</span>
+                  Saving...
+                </>
+              ) : (
+                editingId ? 'Update Room' : 'Create Room'
+              )}
             </button>
             <button
               type="button"
+              disabled={submitting}
               onClick={resetForm}
-              className="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-900 rounded-lg font-medium transition"
+              className={`px-6 py-2 rounded-lg font-medium transition ${
+                submitting 
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                  : 'bg-gray-300 hover:bg-gray-400 text-gray-900'
+              }`}
             >
               Cancel
             </button>
