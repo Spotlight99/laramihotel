@@ -13,9 +13,12 @@ export const makeAuthenticatedRequest = async (
 ) => {
   const { skipAuth = false, skipContentType = false, ...fetchOptions } = options;
 
-  let headers: HeadersInit = {
-    ...(fetchOptions.headers || {}),
-  };
+  const headers: Record<string, string> = {};
+
+  // Add existing headers if they're a plain object
+  if (fetchOptions.headers && typeof fetchOptions.headers === 'object' && !(fetchOptions.headers instanceof Headers)) {
+    Object.assign(headers, fetchOptions.headers as Record<string, string>);
+  }
 
   // Only set Content-Type if not skipped and not already set
   if (!skipContentType && !headers['Content-Type']) {
@@ -33,7 +36,7 @@ export const makeAuthenticatedRequest = async (
 
   const response = await fetch(url, {
     ...fetchOptions,
-    headers,
+    headers: headers as HeadersInit,
   });
 
   if (!response.ok) {
