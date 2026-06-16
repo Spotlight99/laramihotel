@@ -7,6 +7,16 @@ class HotelSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'address', 'phone', 'email', 'manager_whatsapp']
 
 class RoomSerializer(serializers.ModelSerializer):
+    # Convert amenities string to array for frontend compatibility
+    amenities = serializers.SerializerMethodField()
+    
+    def get_amenities(self, obj):
+        """Convert amenities string to array of strings"""
+        if not obj.amenities:
+            return []
+        # Split by comma and clean up whitespace
+        return [a.strip() for a in obj.amenities.split(',') if a.strip()]
+    
     class Meta:
         model = Room
         fields = [
@@ -18,6 +28,15 @@ class RoomSerializer(serializers.ModelSerializer):
 
 class RoomDetailSerializer(serializers.ModelSerializer):
     hotel = HotelSerializer(read_only=True)
+    # Convert amenities string to array for frontend compatibility
+    amenities = serializers.SerializerMethodField()
+    
+    def get_amenities(self, obj):
+        """Convert amenities string to array of strings"""
+        if not obj.amenities:
+            return []
+        # Split by comma and clean up whitespace
+        return [a.strip() for a in obj.amenities.split(',') if a.strip()]
     
     class Meta:
         model = Room
