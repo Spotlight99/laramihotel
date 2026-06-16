@@ -26,6 +26,21 @@ class AdminRoomViewSet(viewsets.ModelViewSet):
         """Use detail serializer for all operations"""
         return RoomDetailSerializer
     
+    def perform_create(self, serializer):
+        """Automatically assign hotel when creating room"""
+        # Get or create default hotel
+        hotel, _ = Hotel.objects.get_or_create(
+            id=1,
+            defaults={
+                'name': 'Larami Holiday Hotel',
+                'address': 'No 10 Chief Chung Street, Aleto Eleme, Rivers State',
+                'phone': '',
+                'email': '',
+                'manager_whatsapp': ''
+            }
+        )
+        serializer.save(hotel=hotel)
+    
     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def upload_image(self, request):
         """Upload room image"""
