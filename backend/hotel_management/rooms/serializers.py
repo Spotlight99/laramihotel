@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Hotel, Room
+import json
 
 class HotelSerializer(serializers.ModelSerializer):
     class Meta:
@@ -11,11 +12,21 @@ class RoomSerializer(serializers.ModelSerializer):
     amenities = serializers.SerializerMethodField()
     
     def get_amenities(self, obj):
-        """Convert amenities string to array of strings"""
+        """Convert amenities to array, handling multiple formats"""
         if not obj.amenities:
             return []
-        # Split by comma and clean up whitespace
-        return [a.strip() for a in obj.amenities.split(',') if a.strip()]
+        
+        amenities_str = obj.amenities.strip()
+        
+        # Try to parse as JSON if it looks like JSON
+        if amenities_str.startswith('['):
+            try:
+                return json.loads(amenities_str)
+            except (json.JSONDecodeError, ValueError):
+                pass
+        
+        # Otherwise split by comma and clean up
+        return [a.strip() for a in amenities_str.split(',') if a.strip()]
     
     class Meta:
         model = Room
@@ -32,11 +43,21 @@ class RoomDetailSerializer(serializers.ModelSerializer):
     amenities = serializers.SerializerMethodField()
     
     def get_amenities(self, obj):
-        """Convert amenities string to array of strings"""
+        """Convert amenities to array, handling multiple formats"""
         if not obj.amenities:
             return []
-        # Split by comma and clean up whitespace
-        return [a.strip() for a in obj.amenities.split(',') if a.strip()]
+        
+        amenities_str = obj.amenities.strip()
+        
+        # Try to parse as JSON if it looks like JSON
+        if amenities_str.startswith('['):
+            try:
+                return json.loads(amenities_str)
+            except (json.JSONDecodeError, ValueError):
+                pass
+        
+        # Otherwise split by comma and clean up
+        return [a.strip() for a in amenities_str.split(',') if a.strip()]
     
     class Meta:
         model = Room
