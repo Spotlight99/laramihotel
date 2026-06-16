@@ -116,6 +116,7 @@ export default function Rooms() {
           name: room.room_type,
           price: `₦${room.price_per_night.toLocaleString()}`,
           tagline: room.description || `${room.capacity} guest${room.capacity !== 1 ? 's' : ''} max`,
+          // Backend now provides image_url with fallback, so always use it
           image: room.image_url || FALLBACK_ROOMS[index % FALLBACK_ROOMS.length].image,
           badge: index === 0 ? "Featured" : (index === 1 ? "Popular" : "Available"),
           badgeColor: index === 0 ? "bg-gold-500" : (index === 1 ? "bg-forest-700" : "bg-forest-600"),
