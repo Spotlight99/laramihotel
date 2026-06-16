@@ -21,6 +21,7 @@ urlpatterns = [
     path("api/", include("hotel_management.api.urls")),
     path("api/rooms/", include("hotel_management.rooms.urls")),
     path("api/bookings/", include("hotel_management.bookings.urls")),
+    path("api/admin/", include("hotel_management.admin_urls")),  # Manager admin endpoints
 ]
 
 
