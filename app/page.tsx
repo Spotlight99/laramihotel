@@ -13,6 +13,7 @@ export default function Home() {
     <main className="relative">
       <Navbar />
       <Hero />
+      <Rooms />
       <BookingSearch />
       <Facilities />
       <Testimonials />
