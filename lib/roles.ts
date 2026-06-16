@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase } from './auth';
 
 export const checkUserRole = async (userId: string): Promise<string | null> => {
   try {
