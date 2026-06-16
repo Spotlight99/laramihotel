@@ -89,20 +89,43 @@ export default function Rooms() {
 
   // Transform API room data to display format
   const displayRooms = rooms.length > 0 
-    ? rooms.map((room, index) => ({
-        id: room.id,
-        name: room.room_type,
-        price: `₦${room.price_per_night.toLocaleString()}`,
-        tagline: room.description || `${room.capacity} guest${room.capacity !== 1 ? 's' : ''} max`,
-        image: room.image_url || FALLBACK_ROOMS[index % FALLBACK_ROOMS.length].image,
-        badge: index === 0 ? "Featured" : (index === 1 ? "Popular" : "Available"),
-        badgeColor: index === 0 ? "bg-gold-500" : (index === 1 ? "bg-forest-700" : "bg-forest-600"),
-        features: room.amenities.slice(0, 4).map((amenity) => ({
-          icon: "✓",
-          label: amenity,
-        })),
-        capacity: room.capacity,
-      }))
+    ? rooms.map((room, index) => {
+        // Safely parse amenities - handle string, array, or JSON formats
+        let amenitiesArray: string[] = [];
+        
+        if (Array.isArray(room.amenities)) {
+          amenitiesArray = room.amenities.filter((a: any) => typeof a === 'string');
+        } else if (typeof room.amenities === 'string') {
+          // Try to parse as JSON if it looks like JSON
+          if (room.amenities.trim().startsWith('[')) {
+            try {
+              const parsed = JSON.parse(room.amenities);
+              amenitiesArray = Array.isArray(parsed) ? parsed : [room.amenities];
+            } catch {
+              // Not valid JSON, split by comma
+              amenitiesArray = room.amenities.split(',').map((a: string) => a.trim()).filter((a: string) => a);
+            }
+          } else {
+            // Regular comma-separated or single string
+            amenitiesArray = room.amenities.split(',').map((a: string) => a.trim()).filter((a: string) => a);
+          }
+        }
+        
+        return {
+          id: room.id,
+          name: room.room_type,
+          price: `₦${room.price_per_night.toLocaleString()}`,
+          tagline: room.description || `${room.capacity} guest${room.capacity !== 1 ? 's' : ''} max`,
+          image: room.image_url || FALLBACK_ROOMS[index % FALLBACK_ROOMS.length].image,
+          badge: index === 0 ? "Featured" : (index === 1 ? "Popular" : "Available"),
+          badgeColor: index === 0 ? "bg-gold-500" : (index === 1 ? "bg-forest-700" : "bg-forest-600"),
+          features: amenitiesArray.slice(0, 4).map((amenity) => ({
+            icon: "✓",
+            label: amenity,
+          })),
+          capacity: room.capacity,
+        };
+      })
     : FALLBACK_ROOMS.map((room, index) => ({
         ...room,
         id: index,
