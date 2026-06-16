@@ -10,7 +10,7 @@ interface Room {
   room_type: string;
   price_per_night: number;
   capacity: number;
-  amenities: string[];
+  amenities: string[] | string;  // Can be array or string from API
   description: string;
   image_url: string;
 }
