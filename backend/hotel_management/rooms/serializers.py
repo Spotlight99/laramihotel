@@ -17,35 +17,6 @@ class HotelSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'address', 'phone', 'email', 'manager_whatsapp']
 
 class RoomSerializer(serializers.ModelSerializer):
-    # Convert amenities string to array for frontend compatibility
-    amenities = serializers.SerializerMethodField()
-    # Provide image URL with fallback
-    image_url = serializers.SerializerMethodField()
-    
-    def get_amenities(self, obj):
-        """Convert amenities to array, handling multiple formats"""
-        if not obj.amenities:
-            return []
-        
-        amenities_str = obj.amenities.strip()
-        
-        # Try to parse as JSON if it looks like JSON
-        if amenities_str.startswith('['):
-            try:
-                return json.loads(amenities_str)
-            except (json.JSONDecodeError, ValueError):
-                pass
-        
-        # Otherwise split by comma and clean up
-        return [a.strip() for a in amenities_str.split(',') if a.strip()]
-    
-    def get_image_url(self, obj):
-        """Return image URL with fallback to default based on room type"""
-        if obj.image_url:
-            return obj.image_url
-        # Return default image for room type, or generic fallback
-        return DEFAULT_IMAGES.get(obj.room_type, DEFAULT_IMAGES['STANDARD'])
-    
     class Meta:
         model = Room
         fields = [
@@ -53,39 +24,62 @@ class RoomSerializer(serializers.ModelSerializer):
             'status', 'capacity', 'amenities', 'description', 
             'image_url', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def to_representation(self, instance):
+        """Convert amenities to array and provide image URL with fallback on read"""
+        data = super().to_representation(instance)
+        
+        # Convert amenities string to array for frontend compatibility
+        if instance.amenities:
+            amenities_str = instance.amenities.strip()
+            # Try to parse as JSON if it looks like JSON
+            if amenities_str.startswith('['):
+                try:
+                    data['amenities'] = json.loads(amenities_str)
+                except (json.JSONDecodeError, ValueError):
+                    data['amenities'] = [a.strip() for a in amenities_str.split(',') if a.strip()]
+            else:
+                # Split by comma and clean up
+                data['amenities'] = [a.strip() for a in amenities_str.split(',') if a.strip()]
+        else:
+            data['amenities'] = []
+        
+        # Provide image URL with fallback to default based on room type
+        if not instance.image_url:
+            data['image_url'] = DEFAULT_IMAGES.get(instance.room_type, DEFAULT_IMAGES['STANDARD'])
+        
+        return data
 
 class RoomDetailSerializer(serializers.ModelSerializer):
     hotel = HotelSerializer(read_only=True)
-    # Convert amenities string to array for frontend compatibility
-    amenities = serializers.SerializerMethodField()
-    # Provide image URL with fallback
-    image_url = serializers.SerializerMethodField()
-    
-    def get_amenities(self, obj):
-        """Convert amenities to array, handling multiple formats"""
-        if not obj.amenities:
-            return []
-        
-        amenities_str = obj.amenities.strip()
-        
-        # Try to parse as JSON if it looks like JSON
-        if amenities_str.startswith('['):
-            try:
-                return json.loads(amenities_str)
-            except (json.JSONDecodeError, ValueError):
-                pass
-        
-        # Otherwise split by comma and clean up
-        return [a.strip() for a in amenities_str.split(',') if a.strip()]
-    
-    def get_image_url(self, obj):
-        """Return image URL with fallback to default based on room type"""
-        if obj.image_url:
-            return obj.image_url
-        # Return default image for room type, or generic fallback
-        return DEFAULT_IMAGES.get(obj.room_type, DEFAULT_IMAGES['STANDARD'])
     
     class Meta:
         model = Room
         fields = '__all__'
+        read_only_fields = ['id', 'created_at', 'updated_at', 'hotel']
+    
+    def to_representation(self, instance):
+        """Convert amenities to array and provide image URL with fallback on read"""
+        data = super().to_representation(instance)
+        
+        # Convert amenities string to array for frontend compatibility
+        if instance.amenities:
+            amenities_str = instance.amenities.strip()
+            # Try to parse as JSON if it looks like JSON
+            if amenities_str.startswith('['):
+                try:
+                    data['amenities'] = json.loads(amenities_str)
+                except (json.JSONDecodeError, ValueError):
+                    data['amenities'] = [a.strip() for a in amenities_str.split(',') if a.strip()]
+            else:
+                # Split by comma and clean up
+                data['amenities'] = [a.strip() for a in amenities_str.split(',') if a.strip()]
+        else:
+            data['amenities'] = []
+        
+        # Provide image URL with fallback to default based on room type
+        if not instance.image_url:
+            data['image_url'] = DEFAULT_IMAGES.get(instance.room_type, DEFAULT_IMAGES['STANDARD'])
+        
+        return data
