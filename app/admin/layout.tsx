@@ -1,17 +1,25 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { supabase, onAuthStateChange } from '@/lib/auth';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const isLoginPage = pathname === '/admin/login';
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
+    // If on login page, don't require authentication
+    if (isLoginPage) {
+      setLoading(false);
+      return;
+    }
+
     // Check if user is authenticated
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -40,7 +48,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
 
     return () => subscription?.unsubscribe();
-  }, [router]);
+  }, [router, isLoginPage]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -55,6 +63,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </div>
     );
+  }
+
+  // For login page, render without layout
+  if (isLoginPage) {
+    return children;
   }
 
   return (
