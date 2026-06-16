@@ -13,7 +13,7 @@ export const makeAuthenticatedRequest = async (
 ) => {
   const { skipAuth = false, skipContentType = false, ...fetchOptions } = options;
 
-  let headers: Record<string, string> = {
+  let headers: HeadersInit = {
     ...(fetchOptions.headers || {}),
   };
 
