@@ -2,7 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.core.files.storage import default_storage
 from .models import Room, Hotel
 from .serializers import RoomSerializer, RoomDetailSerializer, HotelSerializer
@@ -20,7 +20,7 @@ class AdminRoomViewSet(viewsets.ModelViewSet):
     serializer_class = RoomDetailSerializer
     authentication_classes = [SupabaseAuthentication]
     permission_classes = [IsAuthenticated]
-    parser_classes = (MultiPartParser, FormParser)
+    parser_classes = (JSONParser, MultiPartParser, FormParser)
     
     def get_serializer_class(self):
         """Use detail serializer for all operations"""
@@ -91,6 +91,7 @@ class AdminHotelViewSet(viewsets.ViewSet):
     """
     authentication_classes = [SupabaseAuthentication]
     permission_classes = [IsAuthenticated]
+    parser_classes = (JSONParser,)
     
     def list(self, request):
         """Get hotel information"""

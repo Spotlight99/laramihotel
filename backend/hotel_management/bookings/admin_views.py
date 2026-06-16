@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import JSONParser
 from .models import RoomBooking, Invoice
 from .serializers import RoomBookingSerializer, InvoiceSerializer
 from ..api.authentication import SupabaseAuthentication
@@ -18,6 +19,7 @@ class AdminBookingViewSet(viewsets.ModelViewSet):
     serializer_class = RoomBookingSerializer
     authentication_classes = [SupabaseAuthentication]
     permission_classes = [IsAuthenticated]
+    parser_classes = (JSONParser,)
     
     def get_queryset(self):
         """Return all bookings for admin view"""
