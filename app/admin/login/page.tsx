@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signInWithPassword } from '@/lib/auth';
+import { checkUserRole, assignRole } from '@/lib/roles';
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -21,6 +22,22 @@ export default function AdminLogin() {
       const { session } = await signInWithPassword(email, password);
 
       if (session) {
+        // Check if user has a role assigned
+        const existingRole = await checkUserRole(session.user.id);
+
+        if (!existingRole) {
+          // No role assigned yet - assign 'manager' role
+          const assigned = await assignRole(session.user.id, 'manager');
+          if (!assigned) {
+            console.warn('⚠️ Could not assign manager role, proceeding anyway');
+          }
+        } else if (existingRole !== 'manager') {
+          // User has a role but it's not manager
+          setError('Only managers can access this portal');
+          setLoading(false);
+          return;
+        }
+
         // Redirect to admin dashboard
         router.push('/admin');
       }

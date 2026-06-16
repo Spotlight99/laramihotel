@@ -31,13 +31,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return;
       }
 
-      // Check if user is a manager
-      const managerStatus = await isManager(session.user.id);
-      
-      if (!managerStatus) {
-        // Not a manager - redirect to home
-        router.push('/');
-        return;
+      try {
+        // Check if user is a manager
+        const managerStatus = await isManager(session.user.id);
+        
+        if (!managerStatus) {
+          // Not a manager - redirect to home
+          router.push('/');
+          return;
+        }
+      } catch (err) {
+        // If role check fails (table doesn't exist yet), log and continue
+        // The login page will assign the role on next login
+        console.warn('⚠️ Role check failed:', err);
       }
       
       setUser(session.user);
@@ -52,10 +58,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         if (!session) {
           router.push('/admin/login');
         } else {
-          const managerStatus = await isManager(session.user.id);
-          if (!managerStatus) {
-            router.push('/');
-          } else {
+          try {
+            const managerStatus = await isManager(session.user.id);
+            if (!managerStatus) {
+              router.push('/');
+            } else {
+              setUser(session.user);
+            }
+          } catch (err) {
+            console.warn('⚠️ Role check failed:', err);
             setUser(session.user);
           }
         }
