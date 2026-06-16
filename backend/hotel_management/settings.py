@@ -84,24 +84,35 @@ STATICFILES_STORAGE = (
     'whitenoise.storage.CompressedManifestStaticFilesStorage')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# REST Framework
+# REST Framework Configuration
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'hotel_management.api.authentication.SupabaseAuthentication',
     ],
+    # Allow unauthenticated access by default (endpoints can override with permission_classes)
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
 }
 
-# CORS Configuration
-CORS_ALLOWED_ORIGINS = [
-    "https://laramihotel-8x64f43ry.vercel.app",
-    "https://laramihotel.vercel.app",
-]
+# CORS Configuration - Critical for frontend-backend communication
+CORS_ALLOWED_ORIGINS = str(config('CORS_ALLOWED_ORIGINS', default=(
+    'http://localhost:3000,'
+    'https://laramihotel-8x64f43ry.vercel.app,'
+    'https://laramihotel.vercel.app'
+))).split(',')
+
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    'content-type',
+    'accept',
+    'origin',
+    'authorization',
+]
+
+# Security: Allow all hosts (or restrict as needed)
 ALLOWED_HOSTS = ["*"]
 
 # Supabase Configuration
