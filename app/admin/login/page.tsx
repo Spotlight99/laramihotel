@@ -53,7 +53,7 @@ export default function AdminLogin() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-display font-bold text-white mb-2">
-            Larami Holiday
+            Kelvina Hotel
           </h1>
           <p className="text-gold-500 text-sm tracking-widest uppercase">
             Manager Portal
