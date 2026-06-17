@@ -192,7 +192,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M4 6h16MA 12h16M4 18h16"/>
+                d="M4 6h16MA 12h16MA 18h16"/>
             </svg>
 
           </button>
