@@ -19,6 +19,7 @@ export default function RoomsManagement() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -34,6 +35,25 @@ export default function RoomsManagement() {
 
   const formatErrorMessage = (err: any): string => {
     if (typeof err === 'string') {
+      // If it looks like JSON, try to parse it
+      try {
+        if (err.startsWith('{') || err.startsWith('[')) {
+          const parsed = JSON.parse(err);
+          if (parsed.error) return parsed.error;
+          if (parsed.detail) return parsed.detail;
+          // Handle field errors like {"field": ["error message"]}
+          for (const [field, messages] of Object.entries(parsed)) {
+            if (Array.isArray(messages)) {
+              return `${field}: ${messages.join(', ')}`;
+            }
+            if (typeof messages === 'string') {
+              return `${field}: ${messages}`;
+            }
+          }
+        }
+      } catch (e) {
+        // Not JSON, return as-is
+      }
       return err;
     }
     
@@ -103,14 +123,18 @@ export default function RoomsManagement() {
           
           console.log('✅ Image uploaded, URL:', uploadData.url);
           roomData.image_url = uploadData.url;
-        } catch (uploadErr) {
-          const uploadMsg = uploadErr instanceof Error ? uploadErr.message : 'Unknown error';
+        } catch (uploadErr: any) {
+          const uploadMsg = uploadErr instanceof Error ? uploadErr.message : String(uploadErr);
           console.error('❌ Image upload failed:', uploadMsg);
-          throw new Error(`Image upload failed: ${uploadMsg}`);
+          
+          // Parse error message if it's JSON
+          const friendlyUploadError = formatErrorMessage(uploadMsg);
+          setError(`⚠️ Image Upload Error: ${friendlyUploadError}`);
+          setSubmitting(false);
+          return; // Stop here, don't proceed to create room
         }
       } else {
         console.log('ℹ️ No image selected, using default fallback');
-        // Don't include image_url if not provided - backend will use fallback
       }
 
       console.log('💾 Creating/updating room with data:', roomData);
@@ -126,11 +150,16 @@ export default function RoomsManagement() {
       // Refresh rooms and reset form
       await fetchRooms();
       resetForm();
-      setError(null);
+      
+      // Show success message
+      const successMsg = editingId ? '✅ Room updated successfully!' : '✅ Room created successfully!';
+      setSuccess(successMsg);
+      setTimeout(() => setSuccess(null), 3000); // Auto-dismiss after 3 seconds
     } catch (err: any) {
       console.error('❌ Error saving room:', err);
-      const friendlyError = formatErrorMessage(err?.message ? JSON.parse(err.message) : err);
-      setError(`Failed to save room: ${friendlyError}`);
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      const friendlyError = formatErrorMessage(errorMsg);
+      setError(`❌ Failed to save room: ${friendlyError}`);
     } finally {
       setSubmitting(false);
     }
@@ -202,8 +231,45 @@ export default function RoomsManagement() {
 
       {/* Error Message */}
       {error && (
-        <div className="p-4 bg-red-100 border border-red-400 rounded-lg">
-          <p className="text-red-700">{error}</p>
+        <div className="fixed top-4 right-4 z-50 max-w-sm animate-pulse">
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-lg backdrop-blur-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="text-red-500 text-xl mt-0.5">⚠️</div>
+                <div>
+                  <p className="font-semibold text-red-800">{error}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setError(null)}
+                className="text-red-500 hover:text-red-700 transition font-bold text-lg"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Message */}
+      {success && (
+        <div className="fixed top-4 right-4 z-50 max-w-sm animate-pulse">
+          <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg shadow-lg backdrop-blur-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="text-green-500 text-xl mt-0.5">✓</div>
+                <div>
+                  <p className="font-semibold text-green-800">{success}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSuccess(null)}
+                className="text-green-500 hover:text-green-700 transition font-bold text-lg"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
