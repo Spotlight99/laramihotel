@@ -9,7 +9,7 @@ export default function Footer() {
               LH
             </div>
             <div>
-              <p className="font-display text-white text-base font-semibold">Larami Holiday Hotel</p>
+              <p className="font-display text-white text-base font-semibold">Kelvina Holiday Hotel</p>
               <p className="text-white/40 text-xs font-body">Port Harcourt, Nigeria</p>
             </div>
           </div>
@@ -49,7 +49,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-white/6 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-body">
-          <p>© {new Date().getFullYear()} Larami Holiday Hotel. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Kelvina Hotel. All rights reserved.</p>
           <p className="text-white/25">
             Port Harcourt · Rivers State · Nigeria
           </p>

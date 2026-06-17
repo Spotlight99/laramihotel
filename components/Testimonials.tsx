@@ -17,7 +17,7 @@ const testimonials = [
     name:   "Daniel Mensah",
     role:   "Corporate Guest",
     rating: 5,
-    text:   "Flew in for a conference and needed reliable accommodation. Larami Holiday Hotel exceeded my expectations — quiet, clean, and professional. Highly recommended.",
+    text:   "Flew in for a conference and needed reliable accommodation. Kelvina Hotel exceeded my expectations — quiet, clean, and professional. Highly recommended.",
     avatar: "DM",
   },
 ];

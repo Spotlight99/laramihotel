@@ -33,7 +33,7 @@ export default function Contact() {
   const whatsappMsg = encodeURIComponent(
     `Hello Larami Holiday Hotel,\nI'd like to book a room.\nName: ${form.name || "[Your name]"}\nPhone: ${form.phone || "[Your phone]"}\nCheck-in: ${form.checkin || "[Date]"}\nRoom: ${form.roomType || "[Room type]"}`
   );
-  const whatsappUrl = `https://wa.me/2348000000000?text=${whatsappMsg}`;
+  const whatsappUrl = `https://wa.me/2348146800508t=${whatsappMsg}`;
 
   return (
     <section id="contact" className="py-28 bg-forest-900 relative overflow-hidden">
@@ -210,8 +210,8 @@ export default function Contact() {
             <div className="p-6 rounded-2xl bg-white/5 border border-white/10 space-y-5">
               <h3 className="font-display text-white text-lg font-medium">Need Help?</h3>
               {[
-                { icon: "📞", label: "Call us", value: "+234 800 000 0000" },
-                { icon: "📧", label: "Email",   value: "stay@laramiholiday.ng" },
+                { icon: "📞", label: "Call us", value: "+234 8146800508" },
+                { icon: "📧", label: "Email",   value: "flourishtimothy97@gmail.com" },
                 { icon: "🕐", label: "Reception", value: "Open 24 hours" },
               ].map((c) => (
                 <div key={c.label} className="flex items-center gap-4">

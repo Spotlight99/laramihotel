@@ -53,7 +53,7 @@ export default function Location() {
                   </svg>
                 </div>
                 <div className="bg-white/95 backdrop-blur rounded-xl px-4 py-2 shadow-xl text-center">
-                  <p className="font-display text-forest-900 text-sm font-semibold">Larami Holiday Hotel</p>
+                  <p className="font-display text-forest-900 text-sm font-semibold">Kelvina Hotel</p>
                   <p className="text-forest-600 text-xs">Port Harcourt</p>
                 </div>
               </div>
@@ -72,7 +72,7 @@ export default function Location() {
                 Strategically Located in Aleto Eleme
               </h3>
               <p className="text-forest-600 font-body font-light leading-relaxed text-base mb-4">
-                Larami Holiday Hotel is situated at No 10 Chief Chung Street in the heart of Aleto Eleme, Rivers State. Our prime location offers easy access to key business areas and is perfect for both business travelers and leisure visitors.
+                Kelvina Hotel is situated at No 10 Chief Chung Street in the heart of Aleto Eleme, Rivers State. Our prime location offers easy access to key business areas and is perfect for both business travelers and leisure visitors.
               </p>
               <p className="text-forest-600 font-body font-light leading-relaxed text-base">
                 Built by Kelvina, our hotel offers premium accommodations with world-class facilities including a restaurant, lounge, karaoke club, and more.
@@ -92,18 +92,18 @@ export default function Location() {
             {/* Address card */}
             <div className="p-5 rounded-2xl bg-forest-900 text-white">
               <p className="text-gold-400 text-xs tracking-widest uppercase font-body mb-3">Address</p>
-              <p className="font-display text-lg mb-1">Larami Holiday Hotel</p>
+              <p className="font-display text-lg mb-1">Kelvina Hotel</p>
               <p className="text-white/60 font-body font-light text-sm">
                 No 10 Chief Chung Street, Aleto Eleme,<br />
                 Rivers State, Nigeria
               </p>
               <div className="mt-4 flex items-center gap-3">
                 <a
-                  href="tel:+2348000000000"
+                  href="tel:+2348146800508"
                   className="flex items-center gap-2 text-gold-400 hover:text-gold-300 text-sm font-body transition-colors"
                 >
                   <span>📞</span>
-                  +234 800 000 0000
+                  +234 8146800508
                 </a>
               </div>
             </div>

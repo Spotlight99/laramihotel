@@ -35,7 +35,7 @@ export default function Hero() {
         {/* Hotel name */}
         <h1 className="animate-fade-in-up delay-200 font-display text-white font-semibold leading-tight mb-3"
           style={{ fontSize: "clamp(2.8rem, 8vw, 6rem)" }}>
-          Larami Holiday
+          Kelvina
           <br />
           <span className="italic text-gold-300 font-normal">Hotel</span>
         </h1>

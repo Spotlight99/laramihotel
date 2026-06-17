@@ -31,10 +31,10 @@ export default function Navbar() {
         {/* Logo */}
         <a href="#" className="flex items-center gap-3 group">
           <div className="w-9 h-9 rounded-full bg-gold-400 flex items-center justify-center text-forest-900 font-display font-bold text-sm">
-            LH
+            KV
           </div>
           <span className="font-display text-white text-lg font-semibold tracking-wide">
-            Larami Holiday
+            Kelvina
           </span>
         </a>
 
