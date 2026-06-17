@@ -127,7 +127,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className={`${sidebarOpen ? 'w-56' : 'w-16'} bg-forest-900 text-white transition-all duration-300 overflow-hidden flex flex-col`}>
         <div className="p-6">
           <h1 className={`font-display text-xl font-bold ${!sidebarOpen && 'hidden'}`}>
-            Larami Manager
+            Kelvina Manager
           </h1>
         </div>
               
