@@ -40,33 +40,32 @@ export default function BookingSearch() {
 
   return (
     <div className="py-8 bg-cream">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Search Form */}
-        <form onSubmit={handleSearch} className="mb-12 p-8 bg-white rounded-2xl shadow-lg border border-forest-100">
+        <form onSubmit={handleSearch} className="mb-12 p-5 bg-white rounded-2xl shadow-lg border border-forest-100 overflow-hidden">
           <h2 className="font-display text-forest-900 text-2xl font-semibold mb-6">Search Available Rooms</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 w-full">
             {/* Check-in */}
-            <div>
+            <div className="min-w-0">
               <label className="block text-forest-700 text-sm font-semibold mb-2">Check-in Date</label>
               <input
                 type="date"
                 value={checkIn}
                 onChange={(e) => setCheckIn(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-forest-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500"
-              />
+                className="w-full min-w-0 max-w-full px-3 py-3 border border-forest-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500" />
             </div>
 
             {/* Check-out */}
-            <div>
+            <div className="min-w-0">
               <label className="block text-forest-700 text-sm font-semibold mb-2">Check-out Date</label>
               <input
                 type="date"
                 value={checkOut}
                 onChange={(e) => setCheckOut(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-forest-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500"
+                className="w-full min-w-0 max-w-full px-3 py-3 border border-forest-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500"
               />
             </div>
 
