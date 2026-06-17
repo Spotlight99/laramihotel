@@ -12,7 +12,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isLoginPage = pathname === '/admin/login';
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     // If on login page, don't require authentication
@@ -80,6 +80,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     await supabase.auth.signOut();
     router.push('/admin/login');
   };
+  
+  const navItems = [
+    {
+      href: "/admin",
+      icon: "📊",
+      label: "Dashboard",
+    },
+    {
+      href: "/admin/rooms",
+      icon: "🛏️",
+      label: "Room Management",
+    },
+      
+    {
+      href: "/admin/bookings",
+      icon: "📅",
+      label: "Booking Manager",
+    },
+
+    {
+      href: "/admin/hotel",
+      icon: "🏨",
+      label: "Hotel Info",
+    },
+  ];
 
   if (loading) {
     return (
@@ -99,51 +124,52 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-forest-900 text-white transition-all duration-300 overflow-hidden`}>
+      <div className={`${sidebarOpen ? 'w-56' : 'w-16'} bg-forest-900 text-white transition-all duration-300 overflow-hidden flex flex-col`}>
         <div className="p-6">
           <h1 className={`font-display text-xl font-bold ${!sidebarOpen && 'hidden'}`}>
             Larami Manager
           </h1>
         </div>
+              
+        <nav className="mt-8 px-3 flex-1">
+          <div className="space-y-2">
+            {navItems.map((item) => {
+              const active =
+              pathname === item.href || 
+              (item.href !== "/admin" &&
+                pathname.startsWith(item.href));
 
-        <nav className="mt-8 space-y-4 px-4">
-          <Link
-            href="/admin"
-            className="flex items-center space-x-3 p-3 rounded-lg hover:bg-forest-800 transition"
-          >
-            <span className="text-xl">📊</span>
-            {sidebarOpen && <span>Dashboard</span>}
-          </Link>
-          
-          <Link
-            href="/admin/rooms"
-            className="flex items-center space-x-3 p-3 rounded-lg hover:bg-forest-800 transition"
-          >
-            <span className="text-xl">🛏️</span>
-            {sidebarOpen && <span>Room Management</span>}
-          </Link>
-          
-          <Link
-            href="/admin/bookings"
-            className="flex items-center space-x-3 p-3 rounded-lg hover:bg-forest-800 transition"
-          >
-            <span className="text-xl">📅</span>
-            {sidebarOpen && <span>Bookings</span>}
-          </Link>
-          
-          <Link
-            href="/admin/hotel"
-            className="flex items-center space-x-3 p-3 rounded-lg hover:bg-forest-800 transition"
-          >
-            <span className="text-xl">🏨</span>
-            {sidebarOpen && <span>Hotel Info</span>}
-          </Link>
+              return (
+                <Link 
+                  key={item.href}
+                  href={item.href}
+                  className={`
+                    flex items-center gap-3
+                    p-3 rounded-lg
+                    transition-all duration-200
+                    ${
+                      active
+                      ? "bg-gold-500 text-white"
+                      : "hover:bg-forest-800"
+                    }
+                  `}
+                >
+                  <span className="text-xl">
+                    {item.icon}
+                  </span>
+                  {sidebarOpen && (
+                    <span>{item.label}</span>
+                  )}
+                </Link> 
+              );
+            })}
+          </div>
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-forest-800">
+        <div className="p-3 border-t border-forest-800 ">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-red-600 transition bg-red-700"
+            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-red-600 transition-all duration-200"
           >
             <span className="text-xl">🚪</span>
             {sidebarOpen && <span>Logout</span>}
@@ -159,7 +185,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="text-2xl cursor-pointer hover:text-gold-500"
           >
-            ☰
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16MA 12h16M4 18h16"/>
+            </svg>
+
           </button>
           <div className="text-sm text-gray-600">
             {user?.email}
@@ -167,7 +202,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-auto p-8">
+        <div className="flex-1 overflow-auto p-6 md:p-8">
           {children}
         </div>
       </div>
