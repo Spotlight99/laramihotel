@@ -55,10 +55,12 @@ class AdminRoomViewSet(viewsets.ModelViewSet):
         try:
             image_file = request.FILES['image']
             
-            # Validate file size (max 5MB)
-            if image_file.size > 5 * 1024 * 1024:
+            # Validate file size (max 20MB)
+            MAX_FILE_SIZE = 20 * 1024 * 1024  # 20MB
+            if image_file.size > MAX_FILE_SIZE:
+                size_mb = image_file.size / (1024 * 1024)
                 return Response(
-                    {'error': 'Image size must be less than 5MB'},
+                    {'error': f'Image is too large ({size_mb:.1f}MB). Maximum allowed is 20MB.'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             

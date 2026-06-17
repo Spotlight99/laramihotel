@@ -32,6 +32,34 @@ export default function RoomsManagement() {
     description: '',
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+
+  const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setImageError(null);
+
+    if (file) {
+      const fileSizeMB = file.size / (1024 * 1024);
+      
+      // Check file size
+      if (file.size > MAX_FILE_SIZE) {
+        setImageError(`❌ Image too large (${fileSizeMB.toFixed(1)}MB). Maximum is 20MB.`);
+        setImageFile(null);
+        return;
+      }
+
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        setImageError('❌ Please select a valid image file');
+        setImageFile(null);
+        return;
+      }
+
+      setImageFile(file);
+    }
+  };
 
   const formatErrorMessage = (err: any): string => {
     if (typeof err === 'string') {
@@ -202,6 +230,7 @@ export default function RoomsManagement() {
       description: '',
     });
     setImageFile(null);
+    setImageError(null);
     setEditingId(null);
     setShowForm(false);
   };
@@ -368,15 +397,24 @@ export default function RoomsManagement() {
 
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-forest-900 mb-2">
-                Room Image
+                Room Image (Max 20MB)
               </label>
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                onChange={handleImageChange}
+                className={`w-full px-4 py-2 border rounded-lg transition ${
+                  imageError 
+                    ? 'border-red-400 bg-red-50' 
+                    : 'border-gray-300'
+                }`}
               />
-              {imageFile && <p className="text-sm text-green-600 mt-1">✓ File selected</p>}
+              {imageError && (
+                <p className="text-sm text-red-600 mt-1 font-medium">{imageError}</p>
+              )}
+              {imageFile && !imageError && (
+                <p className="text-sm text-green-600 mt-1">✓ {imageFile.name} ({(imageFile.size / 1024 / 1024).toFixed(1)}MB)</p>
+              )}
             </div>
           </div>
 
