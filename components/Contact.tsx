@@ -122,7 +122,7 @@ export default function Contact() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   {/* Check-in */}
                   <div>
                     <label className="block text-white/60 text-xs tracking-wider uppercase font-body mb-2">
@@ -134,7 +134,7 @@ export default function Contact() {
                       value={form.checkin}
                       onChange={handleChange}
                       required
-                      className="w-full bg-white/6 border border-white/15 focus:border-gold-400 text-white rounded-xl px-4 py-3.5 text-sm font-body outline-none transition-colors duration-200 [color-scheme:dark]"
+                      className="w-full min-w-0 bg-white/6 border border-white/15 focus:border-gold-400 text-white rounded-xl px-4 py-3.5 text-sm font-body outline-none transition-colors duration-200 [color-scheme:dark]"
                     />
                   </div>
 
@@ -149,7 +149,7 @@ export default function Contact() {
                       value={form.checkout}
                       onChange={handleChange}
                       required
-                      className="w-full bg-white/6 border border-white/15 focus:border-gold-400 text-white rounded-xl px-4 py-3.5 text-sm font-body outline-none transition-colors duration-200 [color-scheme:dark]"
+                      className="w-full min-w-0 bg-white/6 border border-white/15 focus:border-gold-400 text-white rounded-xl px-4 py-3.5 text-sm font-body outline-none transition-colors duration-200 [color-scheme:dark]"
                     />
                   </div>
                 </div>
