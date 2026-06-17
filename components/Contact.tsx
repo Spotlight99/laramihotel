@@ -122,7 +122,7 @@ export default function Contact() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {/* Check-in */}
                   <div>
                     <label className="block text-white/60 text-xs tracking-wider uppercase font-body mb-2">
