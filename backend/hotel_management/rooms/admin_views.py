@@ -84,14 +84,18 @@ class AdminRoomViewSet(viewsets.ModelViewSet):
             print("CONTENT TYPE:", image_file.content_type)
             print("FILE BYTES TYPE:", type(file_bytes))
             print("FILE SIZE:", len(file_bytes))
-
+            print("BUCKET:", bucket)
             print("Starting Supabase upload...")
-            supabase.storage.from_(bucket).upload(
-                filename,
-                file_bytes,
-            )
-            print("Supabase upload finished")
-            
+            try:
+                result = supabase.storage.from_(bucket).upload(
+                   filename,
+                   file_bytes,
+                )
+                print("UPLOAD RESULT:", result)
+            except Exception as e:
+                print("SUPASE ERROR:", str(e))
+                raise
+             
 
             file_url = supabase.storage.from_(bucket).get_public_url(filename)
             
