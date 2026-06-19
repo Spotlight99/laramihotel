@@ -85,11 +85,12 @@ class AdminRoomViewSet(viewsets.ModelViewSet):
             print("FILE BYTES TYPE:", type(file_bytes))
             print("FILE SIZE:", len(file_bytes))
 
-            
+            print("Starting Supabase upload...")
             supabase.storage.from_(bucket).upload(
                 filename,
                 file_bytes,
             )
+            print("Supabase upload finished")
             
 
             file_url = supabase.storage.from_(bucket).get_public_url(filename)
