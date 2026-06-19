@@ -67,7 +67,7 @@ class AdminRoomViewSet(viewsets.ModelViewSet):
             
             # Generate unique filename
             file_ext = os.path.splitext(image_file.name)[1]
-            filename = f"rooms/{uuid4()}{file_ext}"
+            filename = f"{uuid4()}{file_ext}"
             
            # Upload to Supabase Storage
            
