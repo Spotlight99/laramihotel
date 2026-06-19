@@ -160,8 +160,8 @@ class AdminHotelViewSet(viewsets.ViewSet):
             )
         serializer = HotelSerializer(hotel)
         return Response(serializer.data)
-    
-    def partial_update(self, request):
+    @action(detail=False, methods=['patch'])
+    def update_info(self, request):
         """Update hotel information"""
         try:
             hotel = Hotel.objects.first()
