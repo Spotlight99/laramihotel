@@ -106,7 +106,8 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = str(config('CORS_ALLOWED_ORIGINS', default=(
     'http://localhost:3000,'
     'https://laramihotel-8x64f43ry.vercel.app,'
-    'https://laramihotel.vercel.app'
+    'https://laramihotel.vercel.app,'
+    'https://kelvinahotel.vercel.app'
 ))).split(',')
 
 CORS_ALLOW_CREDENTIALS = True
