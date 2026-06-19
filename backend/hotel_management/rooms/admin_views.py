@@ -90,6 +90,10 @@ class AdminRoomViewSet(viewsets.ModelViewSet):
                 result = supabase.storage.from_(bucket).upload(
                    filename,
                    file_bytes,
+                    {
+                       "content-type": image_file.content_type,
+                       "upsert": "true"
+                    }
                 )
                 print("UPLOAD RESULT:", result)
             except Exception as e:
