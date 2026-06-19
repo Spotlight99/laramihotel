@@ -115,9 +115,11 @@ export const adminAPI = {
 
   // Hotel Info
   getHotelInfo: () => makeAuthenticatedRequest('/admin/hotel/'),
-  updateHotelInfo: (data: any) =>
-    makeAuthenticatedRequest('/admin/hotel/update_info/', {
+  updateHotelInfo: (data: any) => {
+    console.log("USING NEW HOTEL ENDPOINT");
+    return makeAuthenticatedRequest('/admin/hotel/update_info/', {
       method: 'PATCH',
       body: JSON.stringify(data),
-    }),
-};
+    });
+},
+}
