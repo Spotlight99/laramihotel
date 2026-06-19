@@ -8,8 +8,12 @@ const nextConfig = {
       },
       {
         protocol:"https",
-        hostname:"laramihotel.onrender.com"
-      }
+        hostname:"laramihotel.onrender.com",
+      },
+      {
+        protocol: 'https',
+        hostname: 'zhydylqphtuuxdppdjyd.supabase.co',
+      },
     ],
   },
 };
