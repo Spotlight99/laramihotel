@@ -125,6 +125,10 @@ ALLOWED_HOSTS = ["*"]
 SUPABASE_URL = config('SUPABASE_URL', default='')
 SUPABASE_KEY = config('SUPABASE_KEY', default='')
 SUPABASE_SERVICE_KEY = config('SUPABASE_SERVICE_KEY', default='')
+SUPABASE_STORAGE_BUCKET = config(
+    'SUPABASE_STORAGE_BUCKET',
+    default='rooms'
+)
 
 # WhatsApp Configuration
 MANAGER_WHATSAPP = config('MANAGER_WHATSAPP', default='2348146800508')

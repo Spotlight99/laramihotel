@@ -3,13 +3,14 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from django.core.files.storage import default_storage
+from supabase import create_client
 from django.conf import settings
 from django.urls import reverse
 from .models import Room, Hotel
 from .serializers import RoomSerializer, RoomDetailSerializer, HotelSerializer
 from ..api.authentication import SupabaseAuthentication
 from uuid import uuid4
+
 import os
 
 
@@ -68,15 +69,26 @@ class AdminRoomViewSet(viewsets.ModelViewSet):
             file_ext = os.path.splitext(image_file.name)[1]
             filename = f"rooms/{uuid4()}{file_ext}"
             
-            # Save to storage
-            file_path = default_storage.save(filename, image_file)
-            file_url = default_storage.url(file_path)
+           # Upload to Supabase Storage
+
+            supabase = create_client(
+               settings.SUPABASE_URL,
+               settings.SUPABASE_SERVICE_KEY or settings.SUPABASE_KEY
+            )
+
+            bucket = settings.SUPABASE_STORAGE_BUCKET
+
+            image_file.seek(0)
+            file_bytes = image_file.read()
+
             
-            # Ensure we have a full URL (handle relative paths)
-            if file_url and not file_url.startswith('http'):
-                # Build full URL for relative paths
-                if file_url.startswith('/'):
-                    file_url = f"{request.scheme}://{request.get_host()}{file_url}"
+            supabase.storage.from_(bucket).upload(
+                filename,
+                file_bytes,
+            )
+            
+
+            file_url = supabase.storage.from_(bucket).get_public_url(filename)
             
             return Response({
                 'url': file_url,
