@@ -116,7 +116,7 @@ export const adminAPI = {
   // Hotel Info
   getHotelInfo: () => makeAuthenticatedRequest('/admin/hotel/'),
   updateHotelInfo: (data: any) =>
-    makeAuthenticatedRequest('/admin/hotel/', {
+    makeAuthenticatedRequest('/admin/hotel/update_info/', {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),
