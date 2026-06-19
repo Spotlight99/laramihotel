@@ -70,7 +70,7 @@ class AdminRoomViewSet(viewsets.ModelViewSet):
             filename = f"rooms/{uuid4()}{file_ext}"
             
            # Upload to Supabase Storage
-
+           
             supabase = create_client(
                settings.SUPABASE_URL,
                settings.SUPABASE_SERVICE_KEY or settings.SUPABASE_KEY
@@ -80,6 +80,10 @@ class AdminRoomViewSet(viewsets.ModelViewSet):
 
             image_file.seek(0)
             file_bytes = image_file.read()
+            print("FILE NAME:", image_file.name)
+            print("CONTENT TYPE:", image_file.content_type)
+            print("FILE BYTES TYPE:", type(file_bytes))
+            print("FILE SIZE:", len(file_bytes))
 
             
             supabase.storage.from_(bucket).upload(
