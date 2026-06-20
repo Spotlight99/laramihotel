@@ -109,7 +109,7 @@ export default function Facilities() {
               Ready to Experience Luxury?
             </h3>
             <p className="text-white/60 font-body font-light text-sm">
-              Book your stay at Larami Holiday Hotel today.
+              Book your stay at Kelvina Hotel today.
             </p>
           </div>
           <a

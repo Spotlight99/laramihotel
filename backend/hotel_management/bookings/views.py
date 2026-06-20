@@ -176,12 +176,15 @@ class RoomBookingViewSet(viewsets.ModelViewSet):
 
     @staticmethod
     def _generate_whatsapp_link(booking, invoice):
-        from django.conf import settings
-
-        manager_whatsapp = settings.MANAGER_WHATSAPP
+        hotel = booking.room.hotel
+        manager_whatsapp = (
+            hotel.manager_whatsapp.replace("+", "")
+            .replace(" ", "")
+            .replace(" ", "")
+        )
 
         message = f"""
-*Larami Holiday Hotel - Booking Confirmation*
+*{hotel.name} - Booking Confirmation*
 
 Guest: {booking.guest_name}
 Email: {booking.guest_email}

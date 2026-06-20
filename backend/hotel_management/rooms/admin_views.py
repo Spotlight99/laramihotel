@@ -35,7 +35,7 @@ class AdminRoomViewSet(viewsets.ModelViewSet):
         hotel, _ = Hotel.objects.get_or_create(
             id=1,
             defaults={
-                'name': 'Larami Holiday Hotel',
+                'name': 'Kelvina Hotel',
                 'address': 'No 10 Chief Chung Street, Aleto Eleme, Rivers State',
                 'phone': '',
                 'email': '',

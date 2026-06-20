@@ -8,7 +8,7 @@ export default function Hero() {
       {/* Background image */}
       <Image
         src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1800&q=85&auto=format&fit=crop"
-        alt="Larami Holiday Hotel lobby"
+        alt="Kelvina Hotel lobby"
         fill
         priority
         className="object-cover object-center scale-105"
