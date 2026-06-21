@@ -54,13 +54,20 @@ class RoomViewSet(viewsets.ModelViewSet):
             rooms = rooms.filter(room_type=room_type)
         
         # Filter out rooms with conflicting bookings
+        # Exclude rooms with active bookings (any status except CANCELLED/CHECKED_OUT)
         from hotel_management.bookings.models import RoomBooking
         conflicting_bookings = RoomBooking.objects.filter(
             check_in__lt=check_out_date,
-            check_out__gt=check_in_date,
-            status__in=['CONFIRMED', 'CHECKED_IN']
+            check_out__gt=check_in_date
+        ).exclude(
+            status__in=['CANCELLED', 'CHECKED_OUT']
         )
-        rooms = rooms.exclude(bookings__in=conflicting_bookings)
+        
+        # Get room IDs with conflicting bookings
+        conflicting_room_ids = conflicting_bookings.values_list('room_id', flat=True).distinct()
+        
+        # Exclude those rooms
+        rooms = rooms.exclude(id__in=conflicting_room_ids)
         
         serializer = RoomDetailSerializer(rooms, many=True)
         return Response(serializer.data)

@@ -7,14 +7,16 @@ import Location     from "@/components/Location";
 import Contact      from "@/components/Contact";
 import Footer       from "@/components/Footer";
 import BookingSearch from "@/components/BookingSearch";
+import ReservationLookup from "@/components/ReservationLookup";
 
 export default function Home() {
   return (
     <main className="relative">
       <Navbar />
       <Hero />
-      <Rooms />
       <BookingSearch />
+      <Rooms />
+      <ReservationLookup />
       <Facilities />
       <Testimonials />
       <Location />

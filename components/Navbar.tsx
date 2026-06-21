@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react";
 
 const navLinks = [
-  { label: "Rooms",      href: "#rooms"      },
-  { label: "Facilities", href: "#facilities" },
-  { label: "Location",   href: "#location"   },
-  { label: "Contact",    href: "#contact"    },
+  { label: "Rooms",             href: "#rooms"             },
+  { label: "Check Reservation", href: "#check-reservation" },
+  { label: "Facilities",        href: "#facilities"        },
+  { label: "Location",          href: "#location"          },
+  { label: "Contact",           href: "#contact"           },
 ];
 
 export default function Navbar() {
@@ -29,7 +30,7 @@ export default function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
         {/* Logo */}
-        <a href="#" className="flex items-center gap-3 group">
+        <a href="#home" className="flex items-center gap-3 group">
           <div className="w-9 h-9 rounded-full bg-gold-400 flex items-center justify-center text-forest-900 font-display font-bold text-sm">
             KV
           </div>
@@ -50,7 +51,7 @@ export default function Navbar() {
             </a>
           ))}
           <a
-            href="#contact"
+            href="#booking-search"
             className="btn-gold text-forest-900 text-sm font-bold tracking-wider px-6 py-2.5 rounded-full"
           >
             Book Now
@@ -99,7 +100,7 @@ export default function Navbar() {
             </a>
           ))}
           <a
-            href="#contact"
+            href="#booking-search"
             onClick={() => setMenuOpen(false)}
             className="btn-gold text-forest-900 text-sm font-bold tracking-wider px-6 py-3 rounded-full text-center mt-2"
           >

@@ -39,7 +39,7 @@ export default function BookingSearch() {
   };
 
   return (
-    <div className="py-8 bg-cream">
+    <div id="booking-search" className="py-8 bg-cream">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Search Form */}
         <form onSubmit={handleSearch} className="mb-12 p-5 bg-white rounded-2xl shadow-lg border border-forest-100 overflow-hidden">

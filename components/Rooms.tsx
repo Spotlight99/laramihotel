@@ -216,7 +216,7 @@ export default function Rooms() {
                     <p className="font-display text-forest-900 text-lg font-semibold">{room.price}</p>
                   </div>
                   <a
-                    href="#contact"
+                    href={`/booking?room_id=${room.id}`}
                     className="btn-gold text-forest-900 text-xs font-bold tracking-wider uppercase px-5 py-2.5 rounded-full font-body"
                   >
                     Book Now

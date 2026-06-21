@@ -273,6 +273,57 @@ export const bookingsAPI = {
     console.log('✅ Check-out completed:', { id });
     return data;
   },
+
+  cancel: async (id: number, token?: string) => {
+    const url = `${API_BASE_URL}/bookings/${id}/cancel/`;
+    console.log('📡 Cancelling booking:', { url, id });
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const res = await makeRequest(url, {
+      method: 'POST',
+      headers,
+    });
+    
+    const data = await res.json();
+    console.log('✅ Booking cancelled:', { id });
+    return data;
+  },
+
+  getPaymentLink: async (id: number, token?: string) => {
+    const url = `${API_BASE_URL}/bookings/${id}/payment_link/`;
+    console.log('📡 Fetching payment link:', { url, id });
+    
+    const headers: HeadersInit = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const res = await makeRequest(url, { headers });
+    const data = await res.json();
+    console.log('✅ Payment link generated:', { id });
+    return data;
+  },
+
+  getReceipt: async (id: number, token?: string) => {
+    const url = `${API_BASE_URL}/bookings/${id}/receipt/`;
+    console.log('📡 Fetching receipt:', { url, id });
+    
+    const headers: HeadersInit = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const res = await makeRequest(url, { headers });
+    const data = await res.json();
+    console.log('✅ Receipt fetched:', { id });
+    return data;
+  },
 };
 
 // Auth API

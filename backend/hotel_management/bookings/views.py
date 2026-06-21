@@ -39,6 +39,28 @@ class RoomBookingViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        # Double-check for overlapping bookings (defense in depth)
+        check_in = serializer.validated_data["check_in"]
+        check_out = serializer.validated_data["check_out"]
+        room_id = serializer.validated_data["room_id"]
+        
+        active_bookings = RoomBooking.objects.filter(
+            room_id=room_id
+        ).exclude(
+            status__in=["CANCELLED", "CHECKED_OUT"]
+        )
+        
+        overlap_exists = active_bookings.filter(
+            check_in__lt=check_out,
+            check_out__gt=check_in
+        ).exists()
+        
+        if overlap_exists:
+            return Response(
+                {"error": "This room is already booked for the selected dates."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         booking = RoomBooking.objects.create(
             guest_name=serializer.validated_data["guest_name"],
             guest_email=serializer.validated_data["guest_email"],
@@ -107,6 +129,37 @@ class RoomBookingViewSet(viewsets.ModelViewSet):
             RoomBookingSerializer(bookings, many=True).data
         )
 
+    @action(detail=True, methods=["get"], permission_classes=[AllowAny])
+    def payment_link(self, request, pk=None):
+        """Generate WhatsApp payment link for a booking"""
+        try:
+            booking = self.get_object()
+            
+            # Get or create invoice
+            if hasattr(booking, 'invoice'):
+                invoice = booking.invoice
+            else:
+                invoice = Invoice.objects.create(
+                    booking=booking,
+                    invoice_number=f"INV-{booking.id}-{uuid.uuid4().hex[:6].upper()}",
+                    room_charge=booking.total_price,
+                    total_amount=booking.total_price,
+                    payment_method="WHATSAPP",
+                )
+            
+            payment_link = self._generate_whatsapp_link(booking, invoice)
+            
+            return Response({
+                "payment_link": payment_link,
+                "booking_id": booking.id,
+                "total_amount": float(booking.total_price),
+            })
+        except RoomBooking.DoesNotExist:
+            return Response(
+                {"error": "Booking not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
     def confirm_payment(self, request, pk=None):
         booking = self.get_object()
@@ -173,6 +226,44 @@ class RoomBookingViewSet(viewsets.ModelViewSet):
                 "booking": RoomBookingSerializer(booking).data,
             }
         )
+
+    @action(detail=True, methods=["post"], permission_classes=[AllowAny])
+    def cancel(self, request, pk=None):
+        """Cancel a booking. Only PENDING and CONFIRMED bookings can be cancelled."""
+        try:
+            booking = self.get_object()
+
+            # Validate cancellation is allowed
+            if booking.status not in ["PENDING", "CONFIRMED"]:
+                return Response(
+                    {
+                        "error": f"Cannot cancel booking with status {booking.status}. "
+                        "Only PENDING and CONFIRMED bookings can be cancelled."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Update booking status
+            booking.status = "CANCELLED"
+            booking.save()
+
+            # Update invoice if exists
+            if hasattr(booking, "invoice"):
+                invoice = booking.invoice
+                invoice.payment_status = "CANCELLED"
+                invoice.save()
+
+            return Response(
+                {
+                    "message": "Booking cancelled successfully",
+                    "booking": RoomBookingSerializer(booking).data,
+                }
+            )
+        except RoomBooking.DoesNotExist:
+            return Response(
+                {"error": "Booking not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
     @staticmethod
     def _generate_whatsapp_link(booking, invoice):

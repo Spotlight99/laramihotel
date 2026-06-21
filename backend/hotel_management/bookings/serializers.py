@@ -44,11 +44,32 @@ class RoomBookingSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         check_in = attrs.get("check_in")
         check_out = attrs.get("check_out")
+        room_id = attrs.get("room_id")
 
+        # Validate date logic
         if check_in and check_out:
             if check_out <= check_in:
                 raise serializers.ValidationError(
                     "Check-out date must be after check-in date."
+                )
+
+        # Validate room availability (prevent double booking)
+        if room_id and check_in and check_out:
+            active_bookings = RoomBooking.objects.filter(
+                room_id=room_id
+            ).exclude(
+                status__in=["CANCELLED", "CHECKED_OUT"]
+            )
+            
+            # Check for overlapping dates
+            overlap_exists = active_bookings.filter(
+                check_in__lt=check_out,
+                check_out__gt=check_in
+            ).exists()
+            
+            if overlap_exists:
+                raise serializers.ValidationError(
+                    "This room is already booked for the selected dates."
                 )
 
         return attrs

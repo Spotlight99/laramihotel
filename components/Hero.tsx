@@ -62,10 +62,16 @@ export default function Hero() {
         {/* CTAs */}
         <div className="animate-fade-in-up delay-400 flex flex-col sm:flex-row items-center justify-center gap-4">
           <a
-            href="#contact"
+            href="#booking-search"
             className="btn-gold text-forest-900 font-bold font-body tracking-wider px-10 py-4 rounded-full text-sm uppercase"
           >
             Book Your Stay
+          </a>
+          <a
+            href="#check-reservation"
+            className="border border-white/40 hover:border-gold-400 text-white hover:text-gold-300 font-body font-light tracking-wider px-10 py-4 rounded-full text-sm uppercase transition-all duration-300"
+          >
+            Check Reservation
           </a>
           <a
             href="#rooms"

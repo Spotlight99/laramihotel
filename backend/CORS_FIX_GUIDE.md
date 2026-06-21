@@ -18,7 +18,8 @@
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',                    # Local dev
     'https://laramihotel-8x64f43ry.vercel.app', # Vercel (initial)
-    'https://laramihotel.vercel.app',           # Vercel (current)
+    'https://laramihotel.vercel.app',  
+    'https://kelvinahotel.vercel.app',         # Vercel (current)
 ]
 ```
 
