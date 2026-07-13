@@ -1,9 +1,9 @@
 'use client';
 
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { bookingsAPI, roomsAPI, APIValidationError } from '@/lib/api';
-import { parseValidationError, getFieldErrorMessage } from '@/lib/apiErrorHandler';
+import { parseValidationError } from '@/lib/apiErrorHandler';
 import { generateReceiptPDF, downloadReceiptAsText, ReceiptData } from '@/lib/receiptGenerator';
 import { useAuth } from '@/lib/authContext';
 import { useHotelInfo } from '@/lib/useHotelInfo';
@@ -33,6 +33,8 @@ export default function BookingPage() {
   const [backendErrors, setBackendErrors] = useState<{ fieldErrors: Record<string, string[]>; nonFieldErrors: string[] }>({ fieldErrors: {}, nonFieldErrors: [] });
   const [bookingResult, setBookingResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const alertRef = useRef<HTMLDivElement | null>(null);
+  const previousRoomIdRef = useRef<string | null>(roomId);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -66,6 +68,29 @@ export default function BookingPage() {
       fetchRoom();
     }
   }, [roomId]);
+
+  useEffect(() => {
+    if (previousRoomIdRef.current !== roomId) {
+      setBackendErrors({ fieldErrors: {}, nonFieldErrors: [] });
+      setError(null);
+      previousRoomIdRef.current = roomId;
+    }
+  }, [roomId]);
+
+  useEffect(() => {
+    if ((error || backendErrors.nonFieldErrors.length > 0) && (bookingDates.checkIn || bookingDates.checkOut)) {
+      setBackendErrors({ fieldErrors: {}, nonFieldErrors: [] });
+      setError(null);
+    }
+  }, [bookingDates.checkIn, bookingDates.checkOut]);
+
+  useEffect(() => {
+    if ((error || backendErrors.nonFieldErrors.length > 0) && alertRef.current) {
+      requestAnimationFrame(() => {
+        alertRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  }, [error, backendErrors.nonFieldErrors]);
 
   const fetchRoom = async () => {
     console.log('🔥 fetchRoom called, roomId:', roomId);
@@ -147,6 +172,10 @@ export default function BookingPage() {
     return nextErrors;
   };
 
+  const alertMessage = backendErrors.nonFieldErrors.length > 0
+    ? `${backendErrors.nonFieldErrors[0]} Please choose different dates or another room.`
+    : error;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -156,7 +185,6 @@ export default function BookingPage() {
     const errors = validateBookingForm();
     if (Object.keys(errors).length > 0) {
       setLoading(false);
-      setError('Please complete the required fields and correct the highlighted dates.');
       return;
     }
 
@@ -170,23 +198,25 @@ export default function BookingPage() {
 
       setBookingResult(result);
     } catch (error: any) {
-      // Handle validation errors from the backend
       if (error instanceof APIValidationError && error.statusCode === 400) {
         const parsed = parseValidationError(error.data);
         setBackendErrors(parsed);
-        
-        // Set user-facing error message if there are non-field errors
+
         if (parsed.nonFieldErrors.length > 0) {
-          setError(parsed.nonFieldErrors[0]);
+          const availabilityMessage = parsed.nonFieldErrors[0] || 'This room is no longer available for the selected dates.';
+          setError(`${availabilityMessage} Please choose different dates or another room.`);
         } else if (Object.keys(parsed.fieldErrors).length > 0) {
-          // Generic message if only field errors
-          setError('Please correct the highlighted fields and try again.');
+          setError('Please review the highlighted fields and try again.');
         } else {
-          setError('Booking failed. Please try again.');
+          setError('Something went wrong. Please try again later.');
         }
       } else {
-        // Generic error handling for other errors
-        setError(error.message || 'Booking failed. Please try again.');
+        const message = typeof error?.message === 'string' ? error.message.toLowerCase() : '';
+        if (message.includes('fetch') || message.includes('network') || message.includes('timeout') || message.includes('failed to fetch')) {
+          setError('Unable to contact the booking server. Please check your internet connection and try again.');
+        } else {
+          setError('Something went wrong. Please try again later.');
+        }
       }
     } finally {
       setLoading(false);
@@ -457,20 +487,20 @@ export default function BookingPage() {
         <h1 className="font-display text-forest-900 text-3xl font-semibold mb-2">Complete Your Booking</h1>
         <p className="text-forest-600 mb-8">Fill in your details to reserve your room</p>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-            <strong>⚠ Booking Error:</strong> {error}
-          </div>
-        )}
-
-        {backendErrors.nonFieldErrors.length > 0 && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <strong className="text-red-700 block mb-2">⚠ Unable to Complete Booking:</strong>
-            <ul className="list-disc list-inside text-red-700 text-sm space-y-1">
-              {backendErrors.nonFieldErrors.map((errMsg, idx) => (
-                <li key={idx}>{errMsg}</li>
-              ))}
-            </ul>
+        {alertMessage && (
+          <div
+            ref={alertRef}
+            className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm"
+            role="alert"
+            aria-live="polite"
+          >
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 text-amber-600">⚠</div>
+              <div>
+                <p className="font-semibold text-amber-900">Unable to Complete Booking</p>
+                <p className="mt-1 text-sm text-amber-800">{alertMessage}</p>
+              </div>
+            </div>
           </div>
         )}
 
@@ -512,10 +542,8 @@ export default function BookingPage() {
                     onChange={(e) => {
                       setBookingDates((prev) => ({ ...prev, checkIn: e.target.value }));
                       setValidationErrors((prev) => ({ ...prev, checkIn: '' }));
-                      setBackendErrors((prev) => ({
-                        ...prev,
-                        fieldErrors: { ...prev.fieldErrors, check_in: [] },
-                      }));
+                      setBackendErrors({ fieldErrors: {}, nonFieldErrors: [] });
+                      setError(null);
                     }}
                     className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${
                       validationErrors.checkIn || backendErrors.fieldErrors.check_in?.length
@@ -540,10 +568,8 @@ export default function BookingPage() {
                     onChange={(e) => {
                       setBookingDates((prev) => ({ ...prev, checkOut: e.target.value }));
                       setValidationErrors((prev) => ({ ...prev, checkOut: '' }));
-                      setBackendErrors((prev) => ({
-                        ...prev,
-                        fieldErrors: { ...prev.fieldErrors, check_out: [] },
-                      }));
+                      setBackendErrors({ fieldErrors: {}, nonFieldErrors: [] });
+                      setError(null);
                     }}
                     className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${
                       validationErrors.checkOut || backendErrors.fieldErrors.check_out?.length
@@ -649,7 +675,11 @@ export default function BookingPage() {
                 <label className="block text-forest-700 text-sm font-semibold mb-2">Number of Guests *</label>
                 <select
                   value={formData.number_of_guests}
-                  onChange={(e) => setFormData({ ...formData, number_of_guests: parseInt(e.target.value, 10) })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, number_of_guests: parseInt(e.target.value, 10) });
+                    setBackendErrors({ fieldErrors: {}, nonFieldErrors: [] });
+                    setError(null);
+                  }}
                   className="w-full px-4 py-3 border border-forest-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500"
                 >
                   {[1, 2, 3, 4, 5].map((n) => (
@@ -684,7 +714,7 @@ export default function BookingPage() {
               disabled={loading}
               className="btn-gold text-forest-900 font-bold py-3 rounded-lg w-full disabled:opacity-50"
             >
-              {loading ? '⏳ Processing...' : '✓ Proceed to Payment'}
+              {loading ? '⏳ Processing...' : 'Book Now'}
             </button>
           </form>
         )}
