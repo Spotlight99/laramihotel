@@ -7,6 +7,8 @@ import { generateReceiptPDF, downloadReceiptAsText, ReceiptData } from '@/lib/re
 import { useAuth } from '@/lib/authContext';
 import { useHotelInfo } from '@/lib/useHotelInfo';
 
+const BOOKING_DATES_STORAGE_KEY = 'larami-booking-dates';
+
 export default function BookingPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -14,8 +16,6 @@ export default function BookingPage() {
   const { hotel } = useHotelInfo();
 
   const roomId = searchParams.get('room_id');
-  const checkIn = searchParams.get('check_in');
-  const checkOut = searchParams.get('check_out');
 
   const [room, setRoom] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -27,8 +27,37 @@ export default function BookingPage() {
     number_of_guests: 1,
     special_requests: '',
   });
+  const [bookingDates, setBookingDates] = useState({ checkIn: '', checkOut: '' });
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [bookingResult, setBookingResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const initialCheckIn = searchParams.get('check_in')?.trim() || '';
+    const initialCheckOut = searchParams.get('check_out')?.trim() || '';
+
+    let storedDates = { checkIn: '', checkOut: '' };
+    try {
+      const storedValue = window.localStorage.getItem(BOOKING_DATES_STORAGE_KEY);
+      if (storedValue) {
+        storedDates = JSON.parse(storedValue);
+      }
+    } catch {
+      storedDates = { checkIn: '', checkOut: '' };
+    }
+
+    setBookingDates({
+      checkIn: initialCheckIn || storedDates.checkIn || '',
+      checkOut: initialCheckOut || storedDates.checkOut || '',
+    });
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(BOOKING_DATES_STORAGE_KEY, JSON.stringify(bookingDates));
+  }, [bookingDates.checkIn, bookingDates.checkOut]);
 
   useEffect(() => {
     if (roomId) {
@@ -83,17 +112,57 @@ export default function BookingPage() {
     }
   };
 
+  const validateBookingForm = () => {
+    const nextErrors: Record<string, string> = {};
+
+    if (!bookingDates.checkIn.trim()) {
+      nextErrors.checkIn = 'Please select a check-in date.';
+    }
+
+    if (!bookingDates.checkOut.trim()) {
+      nextErrors.checkOut = 'Please select a check-out date.';
+    }
+
+    if (bookingDates.checkIn && bookingDates.checkOut && bookingDates.checkOut <= bookingDates.checkIn) {
+      nextErrors.checkOut = 'Check-out date must be after check-in date.';
+    }
+
+    if (!formData.guest_name.trim()) {
+      nextErrors.guest_name = 'Please enter your full name.';
+    }
+
+    if (!formData.guest_email.trim()) {
+      nextErrors.guest_email = 'Please enter your email address.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.guest_email)) {
+      nextErrors.guest_email = 'Please enter a valid email address.';
+    }
+
+    if (!formData.guest_phone.trim()) {
+      nextErrors.guest_phone = 'Please enter your phone number.';
+    }
+
+    setValidationErrors(nextErrors);
+    return nextErrors;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
+    const errors = validateBookingForm();
+    if (Object.keys(errors).length > 0) {
+      setLoading(false);
+      setError('Please complete the required fields and correct the highlighted dates.');
+      return;
+    }
+
     try {
       const result = await bookingsAPI.create({
         ...formData,
-        room_id: parseInt(roomId!),
-        check_in: checkIn!,
-        check_out: checkOut!,
+        room_id: parseInt(roomId!, 10),
+        check_in: bookingDates.checkIn,
+        check_out: bookingDates.checkOut,
       });
 
       setBookingResult(result);
@@ -140,8 +209,8 @@ export default function BookingPage() {
 
     try {
       // Calculate check-out date
-      const checkOutDate = new Date(checkOut!);
-      const checkInDate = new Date(checkIn!);
+      const checkOutDate = new Date(bookingDates.checkOut);
+      const checkInDate = new Date(bookingDates.checkIn);
       const numberOfNights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
 
       const receiptData: ReceiptData = {
@@ -152,8 +221,8 @@ export default function BookingPage() {
         guestPhone: bookingResult.booking.guest_phone,
         roomNumber: bookingResult.booking.room.room_number,
         roomType: bookingResult.booking.room.room_type,
-        checkInDate: checkIn!,
-        checkOutDate: checkOut!,
+        checkInDate: bookingDates.checkIn,
+        checkOutDate: bookingDates.checkOut,
         numberOfNights,
         pricePerNight: bookingResult.booking.room.price_per_night,
         totalAmount: bookingResult.booking.total_price,
@@ -270,10 +339,10 @@ export default function BookingPage() {
                       <h3 className="text-forest-900 font-semibold mb-3">Stay Dates</h3>
                       <div className="space-y-2 text-forest-700 text-sm">
                         <p>
-                          <strong>Check-in:</strong> {checkIn}
+                          <strong>Check-in:</strong> {bookingDates.checkIn}
                         </p>
                         <p>
-                          <strong>Check-out:</strong> {checkOut}
+                          <strong>Check-out:</strong> {bookingDates.checkOut}
                         </p>
                         <p>
                           <strong>Nights:</strong> {bookingResult.booking.number_of_nights}
@@ -411,48 +480,88 @@ export default function BookingPage() {
             <div className="space-y-6 mb-6">
               <h3 className="font-display text-forest-900 text-lg font-semibold">Guest Information</h3>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-forest-700 text-sm font-semibold mb-2">Check-in Date *</label>
+                  <input
+                    type="date"
+                    value={bookingDates.checkIn}
+                    onChange={(e) => {
+                      setBookingDates((prev) => ({ ...prev, checkIn: e.target.value }));
+                      setValidationErrors((prev) => ({ ...prev, checkIn: '' }));
+                    }}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${validationErrors.checkIn ? 'border-red-400' : 'border-forest-200'}`}
+                    placeholder="YYYY-MM-DD"
+                  />
+                  {validationErrors.checkIn && <p className="mt-2 text-sm text-red-600">{validationErrors.checkIn}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-forest-700 text-sm font-semibold mb-2">Check-out Date *</label>
+                  <input
+                    type="date"
+                    value={bookingDates.checkOut}
+                    onChange={(e) => {
+                      setBookingDates((prev) => ({ ...prev, checkOut: e.target.value }));
+                      setValidationErrors((prev) => ({ ...prev, checkOut: '' }));
+                    }}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${validationErrors.checkOut ? 'border-red-400' : 'border-forest-200'}`}
+                    placeholder="YYYY-MM-DD"
+                  />
+                  {validationErrors.checkOut && <p className="mt-2 text-sm text-red-600">{validationErrors.checkOut}</p>}
+                </div>
+              </div>
+
               <div>
                 <label className="block text-forest-700 text-sm font-semibold mb-2">Full Name *</label>
                 <input
                   type="text"
-                  required
                   value={formData.guest_name}
-                  onChange={(e) => setFormData({ ...formData, guest_name: e.target.value })}
-                  className="w-full px-4 py-3 border border-forest-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500"
+                  onChange={(e) => {
+                    setFormData({ ...formData, guest_name: e.target.value });
+                    setValidationErrors((prev) => ({ ...prev, guest_name: '' }));
+                  }}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${validationErrors.guest_name ? 'border-red-400' : 'border-forest-200'}`}
                   placeholder="John Doe"
                 />
+                {validationErrors.guest_name && <p className="mt-2 text-sm text-red-600">{validationErrors.guest_name}</p>}
               </div>
 
               <div>
                 <label className="block text-forest-700 text-sm font-semibold mb-2">Email *</label>
                 <input
                   type="email"
-                  required
                   value={formData.guest_email}
-                  onChange={(e) => setFormData({ ...formData, guest_email: e.target.value })}
-                  className="w-full px-4 py-3 border border-forest-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500"
+                  onChange={(e) => {
+                    setFormData({ ...formData, guest_email: e.target.value });
+                    setValidationErrors((prev) => ({ ...prev, guest_email: '' }));
+                  }}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${validationErrors.guest_email ? 'border-red-400' : 'border-forest-200'}`}
                   placeholder="john@example.com"
                 />
+                {validationErrors.guest_email && <p className="mt-2 text-sm text-red-600">{validationErrors.guest_email}</p>}
               </div>
 
               <div>
                 <label className="block text-forest-700 text-sm font-semibold mb-2">Phone Number *</label>
                 <input
                   type="tel"
-                  required
                   value={formData.guest_phone}
-                  onChange={(e) => setFormData({ ...formData, guest_phone: e.target.value })}
-                  className="w-full px-4 py-3 border border-forest-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500"
+                  onChange={(e) => {
+                    setFormData({ ...formData, guest_phone: e.target.value });
+                    setValidationErrors((prev) => ({ ...prev, guest_phone: '' }));
+                  }}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${validationErrors.guest_phone ? 'border-red-400' : 'border-forest-200'}`}
                   placeholder="+234XXXXXXXXXX"
                 />
+                {validationErrors.guest_phone && <p className="mt-2 text-sm text-red-600">{validationErrors.guest_phone}</p>}
               </div>
 
               <div>
                 <label className="block text-forest-700 text-sm font-semibold mb-2">Number of Guests *</label>
                 <select
-                  required
                   value={formData.number_of_guests}
-                  onChange={(e) => setFormData({ ...formData, number_of_guests: parseInt(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, number_of_guests: parseInt(e.target.value, 10) })}
                   className="w-full px-4 py-3 border border-forest-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500"
                 >
                   {[1, 2, 3, 4, 5].map((n) => (
