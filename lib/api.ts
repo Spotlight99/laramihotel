@@ -26,6 +26,20 @@ if (typeof window !== 'undefined') {
   }
 }
 
+/**
+ * Custom error class for API validation errors
+ * Stores the full error response data for structured error handling
+ */
+export class APIValidationError extends Error {
+  constructor(
+    public statusCode: number,
+    public data: any
+  ) {
+    super('API Validation Error');
+    this.name = 'APIValidationError';
+  }
+}
+
 // Helper function to safely make API requests with error context
 const makeRequest = async (url: string, options: RequestInit = {}) => {
   try {
@@ -33,11 +47,12 @@ const makeRequest = async (url: string, options: RequestInit = {}) => {
     
     if (!response.ok) {
       const errorText = await response.text();
+      let errorData: any = null;
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
       
       try {
-        const errorJson = JSON.parse(errorText);
-        errorMessage = errorJson.detail || errorJson.error || errorMessage;
+        errorData = JSON.parse(errorText);
+        errorMessage = errorData.detail || errorData.error || errorMessage;
       } catch {
         // errorText is not JSON, use as is
         if (errorText) errorMessage = errorText;
@@ -46,9 +61,11 @@ const makeRequest = async (url: string, options: RequestInit = {}) => {
       console.error(`❌ API Error: ${url}`, {
         status: response.status,
         message: errorMessage,
+        data: errorData,
       });
       
-      throw new Error(errorMessage);
+      // Throw a validation error with the full response data
+      throw new APIValidationError(response.status, errorData || { detail: errorMessage });
     }
     
     return response;

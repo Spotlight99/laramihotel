@@ -2,7 +2,8 @@
 
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { bookingsAPI, roomsAPI } from '@/lib/api';
+import { bookingsAPI, roomsAPI, APIValidationError } from '@/lib/api';
+import { parseValidationError, getFieldErrorMessage } from '@/lib/apiErrorHandler';
 import { generateReceiptPDF, downloadReceiptAsText, ReceiptData } from '@/lib/receiptGenerator';
 import { useAuth } from '@/lib/authContext';
 import { useHotelInfo } from '@/lib/useHotelInfo';
@@ -29,6 +30,7 @@ export default function BookingPage() {
   });
   const [bookingDates, setBookingDates] = useState({ checkIn: '', checkOut: '' });
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [backendErrors, setBackendErrors] = useState<{ fieldErrors: Record<string, string[]>; nonFieldErrors: string[] }>({ fieldErrors: {}, nonFieldErrors: [] });
   const [bookingResult, setBookingResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -149,6 +151,7 @@ export default function BookingPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setBackendErrors({ fieldErrors: {}, nonFieldErrors: [] });
 
     const errors = validateBookingForm();
     if (Object.keys(errors).length > 0) {
@@ -167,13 +170,22 @@ export default function BookingPage() {
 
       setBookingResult(result);
     } catch (error: any) {
-      // Provide friendly error message for double booking
-      if (
-        error.message &&
-        error.message.includes('already booked for the selected dates')
-      ) {
-        setError('Sorry, this room is no longer available for those dates. Please search again.');
+      // Handle validation errors from the backend
+      if (error instanceof APIValidationError && error.statusCode === 400) {
+        const parsed = parseValidationError(error.data);
+        setBackendErrors(parsed);
+        
+        // Set user-facing error message if there are non-field errors
+        if (parsed.nonFieldErrors.length > 0) {
+          setError(parsed.nonFieldErrors[0]);
+        } else if (Object.keys(parsed.fieldErrors).length > 0) {
+          // Generic message if only field errors
+          setError('Please correct the highlighted fields and try again.');
+        } else {
+          setError('Booking failed. Please try again.');
+        }
       } else {
+        // Generic error handling for other errors
         setError(error.message || 'Booking failed. Please try again.');
       }
     } finally {
@@ -447,7 +459,18 @@ export default function BookingPage() {
 
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-            {error}
+            <strong>⚠ Booking Error:</strong> {error}
+          </div>
+        )}
+
+        {backendErrors.nonFieldErrors.length > 0 && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <strong className="text-red-700 block mb-2">⚠ Unable to Complete Booking:</strong>
+            <ul className="list-disc list-inside text-red-700 text-sm space-y-1">
+              {backendErrors.nonFieldErrors.map((errMsg, idx) => (
+                <li key={idx}>{errMsg}</li>
+              ))}
+            </ul>
           </div>
         )}
 
@@ -489,11 +512,24 @@ export default function BookingPage() {
                     onChange={(e) => {
                       setBookingDates((prev) => ({ ...prev, checkIn: e.target.value }));
                       setValidationErrors((prev) => ({ ...prev, checkIn: '' }));
+                      setBackendErrors((prev) => ({
+                        ...prev,
+                        fieldErrors: { ...prev.fieldErrors, check_in: [] },
+                      }));
                     }}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${validationErrors.checkIn ? 'border-red-400' : 'border-forest-200'}`}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${
+                      validationErrors.checkIn || backendErrors.fieldErrors.check_in?.length
+                        ? 'border-red-400'
+                        : 'border-forest-200'
+                    }`}
                     placeholder="YYYY-MM-DD"
                   />
                   {validationErrors.checkIn && <p className="mt-2 text-sm text-red-600">{validationErrors.checkIn}</p>}
+                  {backendErrors.fieldErrors.check_in?.map((msg, idx) => (
+                    <p key={idx} className="mt-2 text-sm text-red-600">
+                      {msg}
+                    </p>
+                  ))}
                 </div>
 
                 <div>
@@ -504,11 +540,24 @@ export default function BookingPage() {
                     onChange={(e) => {
                       setBookingDates((prev) => ({ ...prev, checkOut: e.target.value }));
                       setValidationErrors((prev) => ({ ...prev, checkOut: '' }));
+                      setBackendErrors((prev) => ({
+                        ...prev,
+                        fieldErrors: { ...prev.fieldErrors, check_out: [] },
+                      }));
                     }}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${validationErrors.checkOut ? 'border-red-400' : 'border-forest-200'}`}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${
+                      validationErrors.checkOut || backendErrors.fieldErrors.check_out?.length
+                        ? 'border-red-400'
+                        : 'border-forest-200'
+                    }`}
                     placeholder="YYYY-MM-DD"
                   />
                   {validationErrors.checkOut && <p className="mt-2 text-sm text-red-600">{validationErrors.checkOut}</p>}
+                  {backendErrors.fieldErrors.check_out?.map((msg, idx) => (
+                    <p key={idx} className="mt-2 text-sm text-red-600">
+                      {msg}
+                    </p>
+                  ))}
                 </div>
               </div>
 
@@ -520,11 +569,24 @@ export default function BookingPage() {
                   onChange={(e) => {
                     setFormData({ ...formData, guest_name: e.target.value });
                     setValidationErrors((prev) => ({ ...prev, guest_name: '' }));
+                    setBackendErrors((prev) => ({
+                      ...prev,
+                      fieldErrors: { ...prev.fieldErrors, guest_name: [] },
+                    }));
                   }}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${validationErrors.guest_name ? 'border-red-400' : 'border-forest-200'}`}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${
+                    validationErrors.guest_name || backendErrors.fieldErrors.guest_name?.length
+                      ? 'border-red-400'
+                      : 'border-forest-200'
+                  }`}
                   placeholder="John Doe"
                 />
                 {validationErrors.guest_name && <p className="mt-2 text-sm text-red-600">{validationErrors.guest_name}</p>}
+                {backendErrors.fieldErrors.guest_name?.map((msg, idx) => (
+                  <p key={idx} className="mt-2 text-sm text-red-600">
+                    {msg}
+                  </p>
+                ))}
               </div>
 
               <div>
@@ -535,11 +597,24 @@ export default function BookingPage() {
                   onChange={(e) => {
                     setFormData({ ...formData, guest_email: e.target.value });
                     setValidationErrors((prev) => ({ ...prev, guest_email: '' }));
+                    setBackendErrors((prev) => ({
+                      ...prev,
+                      fieldErrors: { ...prev.fieldErrors, guest_email: [] },
+                    }));
                   }}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${validationErrors.guest_email ? 'border-red-400' : 'border-forest-200'}`}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${
+                    validationErrors.guest_email || backendErrors.fieldErrors.guest_email?.length
+                      ? 'border-red-400'
+                      : 'border-forest-200'
+                  }`}
                   placeholder="john@example.com"
                 />
                 {validationErrors.guest_email && <p className="mt-2 text-sm text-red-600">{validationErrors.guest_email}</p>}
+                {backendErrors.fieldErrors.guest_email?.map((msg, idx) => (
+                  <p key={idx} className="mt-2 text-sm text-red-600">
+                    {msg}
+                  </p>
+                ))}
               </div>
 
               <div>
@@ -550,11 +625,24 @@ export default function BookingPage() {
                   onChange={(e) => {
                     setFormData({ ...formData, guest_phone: e.target.value });
                     setValidationErrors((prev) => ({ ...prev, guest_phone: '' }));
+                    setBackendErrors((prev) => ({
+                      ...prev,
+                      fieldErrors: { ...prev.fieldErrors, guest_phone: [] },
+                    }));
                   }}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${validationErrors.guest_phone ? 'border-red-400' : 'border-forest-200'}`}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${
+                    validationErrors.guest_phone || backendErrors.fieldErrors.guest_phone?.length
+                      ? 'border-red-400'
+                      : 'border-forest-200'
+                  }`}
                   placeholder="+234XXXXXXXXXX"
                 />
                 {validationErrors.guest_phone && <p className="mt-2 text-sm text-red-600">{validationErrors.guest_phone}</p>}
+                {backendErrors.fieldErrors.guest_phone?.map((msg, idx) => (
+                  <p key={idx} className="mt-2 text-sm text-red-600">
+                    {msg}
+                  </p>
+                ))}
               </div>
 
               <div>
