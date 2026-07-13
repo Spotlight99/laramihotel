@@ -23,7 +23,7 @@ class RoomBookingViewSet(viewsets.ModelViewSet):
             return RoomBooking.objects.filter(
                 guest_id=str(self.request.user.pk)
             )
-        return RoomBooking.objects.none()
+        return RoomBooking.objects.all()
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
