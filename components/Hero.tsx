@@ -11,6 +11,7 @@ export default function Hero() {
         alt="Kelvina Hotel lobby"
         fill
         priority
+        fetchPriority="high"
         className="object-cover object-center scale-105"
         style={{ animation: "slowZoom 20s ease-in-out infinite alternate" }}
       />

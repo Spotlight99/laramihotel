@@ -17,7 +17,8 @@ class RoomBookingSerializerTests(TestCase):
             name="Test Hotel",
             address="Test Address",
             phone="+1234567890",
-            email="test@hotel.com"
+            email="test@hotel.com",
+            manager_whatsapp="+1234567890",
         )
         
         # Create rooms
@@ -26,6 +27,9 @@ class RoomBookingSerializerTests(TestCase):
             room_type="Deluxe",
             price_per_night=100.00,
             status='AVAILABLE',
+            description='Test room',
+            image_url='',
+            amenities=[],
             hotel=self.hotel
         )
         
@@ -47,7 +51,7 @@ class RoomBookingSerializerTests(TestCase):
         })
         
         self.assertFalse(serializer.is_valid())
-        self.assertIn('Check-out date must be after check-in date', str(serializer.errors))
+        self.assertIn('Check-out date must be after check-in', str(serializer.errors))
 
     def test_overlapping_booking_rejected(self):
         """Test that overlapping bookings are rejected"""
@@ -204,7 +208,8 @@ class RoomBookingAPITests(APITestCase):
             name="Test Hotel",
             address="Test Address",
             phone="+1234567890",
-            email="test@hotel.com"
+            email="test@hotel.com",
+            manager_whatsapp="+1234567890",
         )
         
         # Create rooms
@@ -213,6 +218,9 @@ class RoomBookingAPITests(APITestCase):
             room_type="Deluxe",
             price_per_night=100.00,
             status='AVAILABLE',
+            description='Test room',
+            image_url='',
+            amenities=[],
             hotel=self.hotel
         )
         
@@ -267,7 +275,10 @@ class RoomBookingAPITests(APITestCase):
         
         response2 = self.client.post(self.booking_url, second_payload, format='json')
         self.assertEqual(response2.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('already booked', response2.data['error'])
+        # DRF returns structured serializer errors; availability uses non_field_errors
+        non_field = response2.data.get('non_field_errors', [])
+        self.assertTrue(non_field, f"Expected non_field_errors in {response2.data}")
+        self.assertIn('already booked', non_field[0].lower())
 
     def test_create_adjacent_booking_allowed(self):
         """Test that adjacent bookings are allowed"""
@@ -346,7 +357,8 @@ class RoomAvailabilityEndpointTests(APITestCase):
             name="Test Hotel",
             address="Test Address",
             phone="+1234567890",
-            email="test@hotel.com"
+            email="test@hotel.com",
+            manager_whatsapp="+1234567890",
         )
         
         # Create multiple rooms
@@ -355,6 +367,9 @@ class RoomAvailabilityEndpointTests(APITestCase):
             room_type="Deluxe",
             price_per_night=100.00,
             status='AVAILABLE',
+            description='Test room 1',
+            image_url='',
+            amenities=[],
             hotel=self.hotel
         )
         
@@ -363,6 +378,9 @@ class RoomAvailabilityEndpointTests(APITestCase):
             room_type="Standard",
             price_per_night=80.00,
             status='AVAILABLE',
+            description='Test room 2',
+            image_url='',
+            amenities=[],
             hotel=self.hotel
         )
         

@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import RoomBooking, Invoice, HouseKeeping
+from .services.availability import check_room_availability, validate_booking_dates
+from .services.exceptions import InvalidBookingDates, RoomUnavailable
 from hotel_management.rooms.serializers import RoomSerializer
 
 
@@ -47,30 +49,25 @@ class RoomBookingSerializer(serializers.ModelSerializer):
         room_id = attrs.get("room_id")
 
         # Validate date logic
-        if check_in and check_out:
-            if check_out <= check_in:
-                raise serializers.ValidationError(
-                    "Check-out date must be after check-in date."
-                )
+        try:
+            validate_booking_dates(check_in, check_out)
+        except InvalidBookingDates as exc:
+            raise serializers.ValidationError(str(exc))
 
         # Validate room availability (prevent double booking)
         if room_id and check_in and check_out:
-            active_bookings = RoomBooking.objects.filter(
-                room_id=room_id
-            ).exclude(
-                status__in=["CANCELLED", "CHECKED_OUT"]
-            )
-            
-            # Check for overlapping dates
-            overlap_exists = active_bookings.filter(
-                check_in__lt=check_out,
-                check_out__gt=check_in
-            ).exists()
-            
-            if overlap_exists:
-                raise serializers.ValidationError(
-                    "This room is already booked for the selected dates."
-                )
+            room = RoomBooking._meta.get_field("room").related_model.objects.filter(
+                pk=room_id
+            ).first()
+            if room:
+                try:
+                    check_room_availability(
+                        room,
+                        check_in,
+                        check_out,
+                    )
+                except RoomUnavailable as exc:
+                    raise serializers.ValidationError(str(exc))
 
         return attrs
 

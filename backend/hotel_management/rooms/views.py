@@ -4,7 +4,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from datetime import datetime, timedelta
 from .models import Room, Hotel
-from .serializers import RoomSerializer, RoomDetailSerializer, HotelSerializer 
+from .serializers import RoomSerializer, RoomDetailSerializer, HotelSerializer
+from hotel_management.bookings.services.availability import is_room_available
 
 from rest_framework.decorators import api_view
 
@@ -54,20 +55,12 @@ class RoomViewSet(viewsets.ModelViewSet):
             rooms = rooms.filter(room_type=room_type)
         
         # Filter out rooms with conflicting bookings
-        # Exclude rooms with active bookings (any status except CANCELLED/CHECKED_OUT)
-        from hotel_management.bookings.models import RoomBooking
-        conflicting_bookings = RoomBooking.objects.filter(
-            check_in__lt=check_out_date,
-            check_out__gt=check_in_date
-        ).exclude(
-            status__in=['CANCELLED', 'CHECKED_OUT']
-        )
-        
-        # Get room IDs with conflicting bookings
-        conflicting_room_ids = conflicting_bookings.values_list('room_id', flat=True).distinct()
-        
-        # Exclude those rooms
-        rooms = rooms.exclude(id__in=conflicting_room_ids)
+        available_rooms = []
+        for room in rooms:
+            if is_room_available(room, check_in_date, check_out_date):
+                available_rooms.append(room.id)
+
+        rooms = rooms.filter(id__in=available_rooms)
         
         serializer = RoomDetailSerializer(rooms, many=True)
         return Response(serializer.data)

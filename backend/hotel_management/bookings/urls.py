@@ -24,4 +24,5 @@ router.register(
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('<int:pk>/cancel/', RoomBookingViewSet.as_view({'post': 'cancel'}), name='booking-cancel'),
 ]

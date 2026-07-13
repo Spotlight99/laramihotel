@@ -5,13 +5,13 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.utils import timezone
 from django.db.models import Q
 from .models import RoomBooking, Invoice, HouseKeeping
+from .services.booking_service import BookingService
 from .serializers import (
     RoomBookingSerializer,
     InvoiceSerializer,
     HouseKeepingSerializer
 )
 from hotel_management.rooms.models import Room
-import uuid
 
 
 class RoomBookingViewSet(viewsets.ModelViewSet):
@@ -27,7 +27,8 @@ class RoomBookingViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             room = Room.objects.get(
@@ -39,29 +40,8 @@ class RoomBookingViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # Double-check for overlapping bookings (defense in depth)
-        check_in = serializer.validated_data["check_in"]
-        check_out = serializer.validated_data["check_out"]
-        room_id = serializer.validated_data["room_id"]
-        
-        active_bookings = RoomBooking.objects.filter(
-            room_id=room_id
-        ).exclude(
-            status__in=["CANCELLED", "CHECKED_OUT"]
-        )
-        
-        overlap_exists = active_bookings.filter(
-            check_in__lt=check_out,
-            check_out__gt=check_in
-        ).exists()
-        
-        if overlap_exists:
-            return Response(
-                {"error": "This room is already booked for the selected dates."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        booking = RoomBooking.objects.create(
+        booking = BookingService.create_booking(
+            room=room,
             guest_name=serializer.validated_data["guest_name"],
             guest_email=serializer.validated_data["guest_email"],
             guest_phone=serializer.validated_data["guest_phone"],
@@ -70,7 +50,6 @@ class RoomBookingViewSet(viewsets.ModelViewSet):
                 if request.user.is_authenticated
                 else ""
             ),
-            room=room,
             check_in=serializer.validated_data["check_in"],
             check_out=serializer.validated_data["check_out"],
             number_of_guests=serializer.validated_data.get(
@@ -81,16 +60,7 @@ class RoomBookingViewSet(viewsets.ModelViewSet):
             ),
         )
 
-        booking.calculate_total()
-        booking.save()
-
-        invoice = Invoice.objects.create(
-            booking=booking,
-            invoice_number=f"INV-{booking.id}-{uuid.uuid4().hex[:6].upper()}",
-            room_charge=booking.total_price,
-            total_amount=booking.total_price,
-            payment_method="WHATSAPP",
-        )
+        invoice = booking.invoice
 
         return Response(
             {
@@ -133,19 +103,10 @@ class RoomBookingViewSet(viewsets.ModelViewSet):
     def payment_link(self, request, pk=None):
         """Generate WhatsApp payment link for a booking"""
         try:
-            booking = self.get_object()
+            booking = RoomBooking.objects.get(pk=pk)
             
             # Get or create invoice
-            if hasattr(booking, 'invoice'):
-                invoice = booking.invoice
-            else:
-                invoice = Invoice.objects.create(
-                    booking=booking,
-                    invoice_number=f"INV-{booking.id}-{uuid.uuid4().hex[:6].upper()}",
-                    room_charge=booking.total_price,
-                    total_amount=booking.total_price,
-                    payment_method="WHATSAPP",
-                )
+            invoice = BookingService.create_invoice(booking)
             
             payment_link = self._generate_whatsapp_link(booking, invoice)
             
@@ -194,11 +155,7 @@ class RoomBookingViewSet(viewsets.ModelViewSet):
         booking.status = "CHECKED_IN"
         booking.save()
 
-        HouseKeeping.objects.create(
-            booking=booking,
-            room=booking.room,
-            status="IN_PROGRESS",
-        )
+        BookingService.create_housekeeping(booking)
 
         return Response(
             {
@@ -231,7 +188,7 @@ class RoomBookingViewSet(viewsets.ModelViewSet):
     def cancel(self, request, pk=None):
         """Cancel a booking. Only PENDING and CONFIRMED bookings can be cancelled."""
         try:
-            booking = self.get_object()
+            booking = RoomBooking.objects.get(pk=pk)
 
             # Validate cancellation is allowed
             if booking.status not in ["PENDING", "CONFIRMED"]:

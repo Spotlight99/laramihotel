@@ -1,6 +1,7 @@
 from django.db import models
 from hotel_management.rooms.models import Room
 from decimal import Decimal
+
 BOOKING_STATUS = [
     ('PENDING', 'Pending'),
     ('CONFIRMED', 'Confirmed'),
@@ -49,16 +50,6 @@ class RoomBooking(models.Model):
     
     def __str__(self):
         return f"{self.guest_name} - Room {self.room.room_number} ({self.check_in} to {self.check_out})"
-    
-    def calculate_total(self):
-        """Calculate total price based on nights and room price"""
-        from datetime import datetime
-        check_in = datetime.strptime(str(self.check_in), '%Y-%m-%d')
-        check_out = datetime.strptime(str(self.check_out), '%Y-%m-%d')
-        nights = (check_out - check_in).days
-        self.number_of_nights = nights
-        self.total_price = float(self.room.price_per_night) * nights
-        return self.total_price
 
 class Invoice(models.Model):
     booking = models.OneToOneField(RoomBooking, on_delete=models.CASCADE, related_name='invoice')
