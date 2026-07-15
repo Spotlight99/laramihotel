@@ -71,6 +71,10 @@ export default function Rooms() {
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [availabilityMessage, setAvailabilityMessage] = useState<string | null>(null);
   const availabilityRequestRef = useRef(0);
+  const today = new Date().toISOString().split('T')[0];
+  const minCheckoutDate = checkIn
+    ? new Date(new Date(checkIn).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    : today;
 
   useEffect(() => {
     const fetchRooms = async () => {
@@ -220,6 +224,7 @@ export default function Rooms() {
                 <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-forest-600">Check-in</label>
                 <input
                   type="date"
+                  min={today}
                   value={checkIn}
                   onChange={(e) => setCheckIn(e.target.value)}
                   className="w-full rounded-lg border border-forest-200 px-3 py-2.5"
@@ -229,6 +234,7 @@ export default function Rooms() {
                 <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-forest-600">Check-out</label>
                 <input
                   type="date"
+                  min={minCheckoutDate}
                   value={checkOut}
                   onChange={(e) => setCheckOut(e.target.value)}
                   className="w-full rounded-lg border border-forest-200 px-3 py-2.5"
@@ -237,16 +243,36 @@ export default function Rooms() {
             </div>
           </div>
 
-          {availabilityLoading && <p className="mt-4 text-sm text-forest-600">Checking availability...</p>}
-          {availabilityMessage && <p className="mt-4 text-sm text-amber-700">{availabilityMessage}</p>}
+          {availabilityLoading && (
+            <p className="mt-4 text-sm text-forest-600" role="status" aria-live="polite">
+              <span className="mr-2 inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-gold-500" />
+              Checking availability...
+            </p>
+          )}
+          {availabilityMessage && <p className="mt-4 text-sm text-amber-700" role="status" aria-live="polite">{availabilityMessage}</p>}
         </div>
 
         {/* Room cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="animate-pulse overflow-hidden rounded-2xl border border-forest-100 bg-white shadow-sm">
+                <div className="h-52 bg-forest-100" />
+                <div className="space-y-3 p-6">
+                  <div className="h-4 w-24 rounded bg-forest-100" />
+                  <div className="h-6 w-3/4 rounded bg-forest-100" />
+                  <div className="h-4 w-full rounded bg-forest-100" />
+                  <div className="h-10 rounded-lg bg-forest-100" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {displayRooms.map((room) => (
             <div
               key={room.id}
-              className="card-lift bg-white rounded-2xl overflow-hidden shadow-md border border-forest-50 flex flex-col"
+              className="card-lift flex flex-col overflow-hidden rounded-2xl border border-forest-50 bg-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
             >
               {/* Image */}
               <div className="relative h-52 overflow-hidden">
@@ -315,7 +341,7 @@ export default function Rooms() {
                   ) : (
                     <a
                       href={`/booking?room_id=${room.id}`}
-                      className="btn-gold text-forest-900 text-xs font-bold tracking-wider uppercase px-5 py-2.5 rounded-full font-body"
+                      className="rounded-full bg-gold-500 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-forest-900 transition-all duration-300 hover:bg-gold-400"
                     >
                       Book Now
                     </a>
@@ -324,17 +350,12 @@ export default function Rooms() {
               </div>
             </div>
           ))}
-        </div>
-
-        {/* Loading/Error state */}
-        {loading && (
-          <div className="text-center py-8">
-            <p className="text-forest-600">Loading room information...</p>
           </div>
         )}
 
-        {error && (
-          <div className="mt-8 p-6 bg-amber-50 border border-amber-200 rounded-lg text-center">
+        {/* Loading/Error state */}
+        {!loading && !loading && error && (
+          <div className="mt-8 rounded-lg border border-amber-200 bg-amber-50 p-6 text-center">
             <p className="text-forest-600">
               Currently unable to load live room data. Please use the booking search to check availability or contact us directly.
             </p>

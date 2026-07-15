@@ -26,6 +26,10 @@ export default function BookingSearch() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const lastRequestKeyRef = useRef<string | null>(null);
   const requestSequenceRef = useRef(0);
+  const today = new Date().toISOString().split('T')[0];
+  const minCheckoutDate = checkIn
+    ? new Date(new Date(checkIn).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    : today;
 
   useEffect(() => {
     let isMounted = true;
@@ -74,7 +78,7 @@ export default function BookingSearch() {
     const requestId = ++requestSequenceRef.current;
     setLoading(true);
     setSearched(true);
-    setStatusMessage(null);
+    setStatusMessage('Checking availability...');
 
     try {
       const roomCatalog = allRooms.length > 0 ? allRooms : await roomsAPI.getAll();
@@ -144,6 +148,7 @@ export default function BookingSearch() {
               <label className="block text-forest-700 text-sm font-semibold mb-2">Check-in Date</label>
               <input
                 type="date"
+                min={today}
                 value={checkIn}
                 onChange={(e) => setCheckIn(e.target.value)}
                 required
@@ -155,6 +160,7 @@ export default function BookingSearch() {
               <label className="block text-forest-700 text-sm font-semibold mb-2">Check-out Date</label>
               <input
                 type="date"
+                min={minCheckoutDate}
                 value={checkOut}
                 onChange={(e) => setCheckOut(e.target.value)}
                 required
@@ -184,9 +190,9 @@ export default function BookingSearch() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full btn-gold text-forest-900 font-bold py-3 rounded-lg disabled:opacity-50"
+                className="w-full rounded-lg bg-gold-500 px-4 py-3 font-semibold text-forest-900 transition-all duration-300 hover:bg-gold-400 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loading ? 'Searching...' : 'Search Rooms'}
+                {loading ? 'Checking availability...' : 'Search Rooms'}
               </button>
             </div>
           </div>
@@ -196,19 +202,33 @@ export default function BookingSearch() {
         {searched && (
           <div>
             {statusMessage && (
-              <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+              <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900" role="status" aria-live="polite">
                 {statusMessage}
               </div>
             )}
 
             <h3 className="font-display text-forest-900 text-xl font-semibold mb-6">
-              {loading ? 'Searching...' : `${availableRooms.length} Room${availableRooms.length !== 1 ? 's' : ''} Available`}
+              {loading ? 'Checking availability...' : `${availableRooms.length} Room${availableRooms.length !== 1 ? 's' : ''} Available`}
             </h3>
 
-            {availableRooms.length > 0 ? (
+            {loading && searched && availableRooms.length === 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div key={index} className="animate-pulse overflow-hidden rounded-2xl border border-forest-100 bg-white shadow-sm">
+                    <div className="h-48 bg-forest-100" />
+                    <div className="space-y-3 p-6">
+                      <div className="h-4 w-24 rounded bg-forest-100" />
+                      <div className="h-5 w-3/4 rounded bg-forest-100" />
+                      <div className="h-4 w-full rounded bg-forest-100" />
+                      <div className="h-10 rounded-lg bg-forest-100" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : availableRooms.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {availableRooms.map((room) => (
-                  <div key={room.id} className="card-lift bg-white rounded-2xl overflow-hidden shadow-md border border-forest-50">
+                  <div key={room.id} className="card-lift overflow-hidden rounded-2xl border border-forest-50 bg-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
                     <div className="relative h-48 overflow-hidden">
                       <Image
                         src={room.image_url}
@@ -250,7 +270,7 @@ export default function BookingSearch() {
                       {room.isAvailable ? (
                         <a
                           href={`/booking?room_id=${room.id}&check_in=${checkIn}&check_out=${checkOut}`}
-                          className="btn-gold text-forest-900 font-bold py-2 rounded-lg block text-center w-full"
+                          className="block w-full rounded-lg bg-gold-500 px-4 py-2.5 text-center font-semibold text-forest-900 transition-all duration-300 hover:bg-gold-400"
                         >
                           Book Now
                         </a>
@@ -258,7 +278,7 @@ export default function BookingSearch() {
                         <button
                           type="button"
                           disabled
-                          className="w-full cursor-not-allowed rounded-lg border border-forest-200 bg-forest-50 py-2 font-semibold text-forest-500"
+                          className="w-full cursor-not-allowed rounded-lg border border-forest-200 bg-forest-50 py-2.5 font-semibold text-forest-500"
                         >
                           Unavailable
                         </button>
