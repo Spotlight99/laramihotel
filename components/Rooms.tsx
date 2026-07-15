@@ -65,6 +65,11 @@ export default function Rooms() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
+  const [availabilityMap, setAvailabilityMap] = useState<Record<number, boolean>>({});
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [availabilityMessage, setAvailabilityMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchRooms = async () => {
@@ -86,6 +91,51 @@ export default function Rooms() {
 
     fetchRooms();
   }, []);
+
+  useEffect(() => {
+    if (!checkIn || !checkOut) {
+      setAvailabilityMap({});
+      setAvailabilityMessage(null);
+      return;
+    }
+
+    const checkInDate = new Date(checkIn);
+    const checkOutDate = new Date(checkOut);
+
+    if (Number.isNaN(checkInDate.getTime()) || Number.isNaN(checkOutDate.getTime()) || checkOutDate <= checkInDate) {
+      setAvailabilityMap({});
+      setAvailabilityMessage('Check-out date must be after check-in date.');
+      return;
+    }
+
+    let isMounted = true;
+    setAvailabilityLoading(true);
+    setAvailabilityMessage(null);
+
+    roomsAPI.getAvailable(checkIn, checkOut)
+      .then((availableRooms: any[]) => {
+        if (!isMounted) return;
+        const nextAvailability = Object.fromEntries(availableRooms.map((room: any) => [room.id, true]));
+        setAvailabilityMap(nextAvailability);
+        if (availableRooms.length === 0) {
+          setAvailabilityMessage('No rooms are available for those dates.');
+        }
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setAvailabilityMap({});
+        setAvailabilityMessage('We could not verify live availability for those dates.');
+      })
+      .finally(() => {
+        if (isMounted) {
+          setAvailabilityLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [checkIn, checkOut]);
 
   // Transform API room data to display format
   const displayRooms = rooms.length > 0 
@@ -161,6 +211,38 @@ export default function Rooms() {
           </p>
         </div>
 
+        <div className="mb-10 rounded-2xl border border-forest-100 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h3 className="font-display text-forest-900 text-xl font-semibold">Check live availability</h3>
+              <p className="text-forest-600 text-sm">Pick dates to see which rooms are open for your stay.</p>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-forest-600">Check-in</label>
+                <input
+                  type="date"
+                  value={checkIn}
+                  onChange={(e) => setCheckIn(e.target.value)}
+                  className="w-full rounded-lg border border-forest-200 px-3 py-2.5"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-forest-600">Check-out</label>
+                <input
+                  type="date"
+                  value={checkOut}
+                  onChange={(e) => setCheckOut(e.target.value)}
+                  className="w-full rounded-lg border border-forest-200 px-3 py-2.5"
+                />
+              </div>
+            </div>
+          </div>
+
+          {availabilityLoading && <p className="mt-4 text-sm text-forest-600">Checking availability...</p>}
+          {availabilityMessage && <p className="mt-4 text-sm text-amber-700">{availabilityMessage}</p>}
+        </div>
+
         {/* Room cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {displayRooms.map((room) => (
@@ -188,9 +270,22 @@ export default function Rooms() {
               {/* Body */}
               <div className="p-6 flex flex-col flex-1">
                 <div className="mb-4">
-                  <h3 className="font-display text-forest-900 text-xl font-semibold mb-1">
-                    {room.name}
-                  </h3>
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="font-display text-forest-900 text-xl font-semibold mb-1">
+                      {room.name}
+                    </h3>
+                    {checkIn && checkOut ? (
+                      availabilityMap[room.id] ? (
+                        <span className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-700">
+                          Available
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-rose-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-rose-700">
+                          Unavailable
+                        </span>
+                      )
+                    ) : null}
+                  </div>
                   <p className="text-forest-500 font-body font-light text-sm">
                     {room.tagline}
                   </p>
@@ -215,12 +310,18 @@ export default function Rooms() {
                     <p className="text-forest-400 text-xs font-body tracking-wide">From</p>
                     <p className="font-display text-forest-900 text-lg font-semibold">{room.price}</p>
                   </div>
-                  <a
-                    href={`/booking?room_id=${room.id}`}
-                    className="btn-gold text-forest-900 text-xs font-bold tracking-wider uppercase px-5 py-2.5 rounded-full font-body"
-                  >
-                    Book Now
-                  </a>
+                  {checkIn && checkOut && availabilityMap[room.id] === false ? (
+                    <span className="text-xs font-semibold uppercase tracking-wider text-rose-600">
+                      Unavailable
+                    </span>
+                  ) : (
+                    <a
+                      href={`/booking?room_id=${room.id}`}
+                      className="btn-gold text-forest-900 text-xs font-bold tracking-wider uppercase px-5 py-2.5 rounded-full font-body"
+                    >
+                      Book Now
+                    </a>
+                  )}
                 </div>
               </div>
             </div>

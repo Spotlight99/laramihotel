@@ -139,6 +139,11 @@ export const roomsAPI = {
     return rooms;
   },
 
+  checkRoomAvailability: async (roomId: number, checkIn: string, checkOut: string) => {
+    const rooms = await roomsAPI.getAvailable(checkIn, checkOut);
+    return rooms.some((room: any) => String(room.id) === String(roomId));
+  },
+
   getAll: async () => {
     const url = `${API_BASE_URL}/rooms/?t=${Date.now()}`;
     console.log('📡 Fetching all rooms:', url);

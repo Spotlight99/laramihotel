@@ -1,7 +1,7 @@
 'use client';
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { roomsAPI } from "@/lib/api";
 
 interface AvailableRoom {
@@ -21,21 +21,63 @@ export default function BookingSearch() {
   const [availableRooms, setAvailableRooms] = useState<AvailableRoom[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const searchRooms = async () => {
+    if (!checkIn || !checkOut) {
+      setAvailableRooms([]);
+      setSearched(false);
+      setStatusMessage('Select both dates to see live availability.');
+      return;
+    }
+
+    const checkInDate = new Date(checkIn);
+    const checkOutDate = new Date(checkOut);
+
+    if (Number.isNaN(checkInDate.getTime()) || Number.isNaN(checkOutDate.getTime()) || checkOutDate <= checkInDate) {
+      setAvailableRooms([]);
+      setSearched(true);
+      setStatusMessage('Check-out date must be after check-in date.');
+      return;
+    }
+
     setLoading(true);
     setSearched(true);
+    setStatusMessage(null);
 
     try {
       const rooms = await roomsAPI.getAvailable(checkIn, checkOut, roomType || undefined);
       setAvailableRooms(rooms);
+      if (rooms.length === 0) {
+        setStatusMessage('No rooms are available for those dates. Please try a different range.');
+      }
     } catch (error) {
       console.error('Search failed:', error);
-      alert('Failed to search rooms');
+      setAvailableRooms([]);
+      setStatusMessage('We could not load availability right now. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    if (!checkIn || !checkOut) {
+      setAvailableRooms([]);
+      setSearched(false);
+      setStatusMessage(null);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void searchRooms();
+    }, 250);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [checkIn, checkOut, roomType]);
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await searchRooms();
   };
 
   return (
@@ -102,6 +144,12 @@ export default function BookingSearch() {
         {/* Results */}
         {searched && (
           <div>
+            {statusMessage && (
+              <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+                {statusMessage}
+              </div>
+            )}
+
             <h3 className="font-display text-forest-900 text-xl font-semibold mb-6">
               {loading ? 'Searching...' : `${availableRooms.length} Room${availableRooms.length !== 1 ? 's' : ''} Available`}
             </h3>
@@ -120,9 +168,14 @@ export default function BookingSearch() {
                     </div>
 
                     <div className="p-6">
-                      <h4 className="font-display text-forest-900 text-lg font-semibold mb-2">
-                        Room {room.room_number}
-                      </h4>
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <h4 className="font-display text-forest-900 text-lg font-semibold">
+                          Room {room.room_number}
+                        </h4>
+                        <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
+                          Available
+                        </span>
+                      </div>
                       <p className="text-forest-600 text-sm font-light mb-3">{room.room_type}</p>
 
                       <div className="mb-4">

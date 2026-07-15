@@ -31,6 +31,7 @@ export default function BookingPage() {
   const [bookingDates, setBookingDates] = useState({ checkIn: '', checkOut: '' });
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [backendErrors, setBackendErrors] = useState<{ fieldErrors: Record<string, string[]>; nonFieldErrors: string[] }>({ fieldErrors: {}, nonFieldErrors: [] });
+  const [availabilityState, setAvailabilityState] = useState<{ loading: boolean; checked: boolean; available: boolean | null }>({ loading: false, checked: false, available: null });
   const [bookingResult, setBookingResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const alertRef = useRef<HTMLDivElement | null>(null);
@@ -91,6 +92,40 @@ export default function BookingPage() {
       });
     }
   }, [error, backendErrors.nonFieldErrors]);
+
+  useEffect(() => {
+    if (!room?.id || !bookingDates.checkIn || !bookingDates.checkOut) {
+      setAvailabilityState({ loading: false, checked: false, available: null });
+      return;
+    }
+
+    const checkInDate = new Date(bookingDates.checkIn);
+    const checkOutDate = new Date(bookingDates.checkOut);
+
+    if (Number.isNaN(checkInDate.getTime()) || Number.isNaN(checkOutDate.getTime()) || checkOutDate <= checkInDate) {
+      setAvailabilityState({ loading: false, checked: true, available: false });
+      return;
+    }
+
+    let isMounted = true;
+    setAvailabilityState({ loading: true, checked: false, available: null });
+
+    roomsAPI.checkRoomAvailability(room.id, bookingDates.checkIn, bookingDates.checkOut)
+      .then((isAvailable) => {
+        if (isMounted) {
+          setAvailabilityState({ loading: false, checked: true, available: isAvailable });
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setAvailabilityState({ loading: false, checked: true, available: false });
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [room?.id, bookingDates.checkIn, bookingDates.checkOut]);
 
   const fetchRoom = async () => {
     console.log('🔥 fetchRoom called, roomId:', roomId);
@@ -172,9 +207,13 @@ export default function BookingPage() {
     return nextErrors;
   };
 
+  const availabilityAlertMessage = availabilityState.checked && availabilityState.available === false
+    ? 'This room is no longer available for the selected dates. Please choose different dates or another room.'
+    : null;
+
   const alertMessage = backendErrors.nonFieldErrors.length > 0
     ? `${backendErrors.nonFieldErrors[0]} Please choose different dates or another room.`
-    : error;
+    : error || availabilityAlertMessage;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,6 +223,12 @@ export default function BookingPage() {
 
     const errors = validateBookingForm();
     if (Object.keys(errors).length > 0) {
+      setLoading(false);
+      return;
+    }
+
+    if (availabilityState.checked && availabilityState.available === false) {
+      setError('This room is no longer available for the selected dates. Please choose different dates or another room.');
       setLoading(false);
       return;
     }
@@ -527,6 +572,16 @@ export default function BookingPage() {
                   <p className="text-forest-900 font-semibold">{bookingResult?.booking?.number_of_nights || '-'}</p>
                 </div>
               </div>
+
+              <div className="mt-4 rounded-lg border border-forest-200 bg-white/70 p-4 text-sm text-forest-700">
+                {availabilityState.loading ? (
+                  <p>Checking live availability for your chosen dates...</p>
+                ) : availabilityState.checked && availabilityState.available === true ? (
+                  <p className="text-emerald-700">This room is available for your selected dates.</p>
+                ) : availabilityState.checked && availabilityState.available === false ? (
+                  <p className="text-rose-700">This room is no longer available for the selected dates.</p>
+                ) : null}
+              </div>
             </div>
 
             {/* Guest Info */}
@@ -711,7 +766,7 @@ export default function BookingPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || availabilityState.loading || (availabilityState.checked && availabilityState.available === false)}
               className="btn-gold text-forest-900 font-bold py-3 rounded-lg w-full disabled:opacity-50"
             >
               {loading ? '⏳ Processing...' : 'Book Now'}
