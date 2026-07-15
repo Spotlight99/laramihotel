@@ -8,6 +8,13 @@ import { parseValidationError } from '@/lib/apiErrorHandler';
 import { generateReceiptPDF, downloadReceiptAsText, ReceiptData } from '@/lib/receiptGenerator';
 import { useAuth } from '@/lib/authContext';
 import { useHotelInfo } from '@/lib/useHotelInfo';
+import { useReservationSummary } from '@/hooks/useReservationSummary';
+import BookingReference from '@/components/booking/BookingReference';
+import ReservationSummary from '@/components/booking/ReservationSummary';
+import PaymentInstructions from '@/components/booking/PaymentInstructions';
+import BookingTimeline from '@/components/booking/BookingTimeline';
+import SuccessActions from '@/components/booking/SuccessActions';
+import { buildWhatsAppUrl } from '@/lib/bookingUtils';
 
 const BOOKING_DATES_STORAGE_KEY = 'larami-booking-dates';
 
@@ -36,7 +43,15 @@ export default function BookingPage() {
   const [availabilityState, setAvailabilityState] = useState<{ loading: boolean; checked: boolean; available: boolean | null }>({ loading: false, checked: false, available: null });
   const [bookingResult, setBookingResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isDownloadingReceipt, setIsDownloadingReceipt] = useState(false);
   const alertRef = useRef<HTMLDivElement | null>(null);
+  const reservationSummary = useReservationSummary({
+    bookingResult,
+    room,
+    bookingDates,
+    formData,
+    hotel,
+  });
   const previousRoomIdRef = useRef<string | null>(roomId);
 
   const today = new Date().toISOString().split('T')[0];
@@ -298,8 +313,23 @@ export default function BookingPage() {
     }
   };
 
+  const handleVerifyPayment = () => {
+    const whatsappUrl = bookingResult?.payment_link || buildWhatsAppUrl(reservationSummary.whatsappMessage, formData.guest_phone || bookingResult?.booking?.guest_phone);
+    if (typeof window !== 'undefined') {
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handlePrintReservation = () => {
+    if (typeof window !== 'undefined') {
+      window.print();
+    }
+  };
+
   const handleDownloadReceipt = async () => {
     if (!bookingResult?.booking) return;
+
+    setIsDownloadingReceipt(true);
 
     try {
       // Calculate check-out date
@@ -336,6 +366,8 @@ export default function BookingPage() {
       }
     } catch {
       alert('Failed to generate receipt. Please try again.');
+    } finally {
+      setIsDownloadingReceipt(false);
     }
   };
 
@@ -343,11 +375,10 @@ export default function BookingPage() {
   if (bookingResult) {
     return (
       <div className="py-28 bg-cream">
-        <div className="max-w-4xl mx-auto px-6">
-          {/* Success Header */}
-          <div className="text-center mb-12">
-            <div className="w-16 h-16 rounded-full bg-gold-500/20 flex items-center justify-center mx-auto mb-6">
-              <svg viewBox="0 0 20 20" fill="currentColor" className="w-8 h-8 text-gold-400">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="mb-10 text-center">
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-gold-500/20">
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-8 w-8 text-gold-400">
                 <path
                   fillRule="evenodd"
                   d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -355,175 +386,98 @@ export default function BookingPage() {
                 />
               </svg>
             </div>
-            <h1 className="font-display text-forest-900 text-4xl font-semibold mb-3">Booking Confirmed!</h1>
-            <p className="text-forest-600 text-lg mb-6">
-              Your booking has been successfully received. Please complete payment on WhatsApp to activate your reservation.
+            <h1 className="mb-3 font-display text-4xl font-semibold text-forest-900">Booking Confirmed!</h1>
+            <p className="mb-6 text-lg text-forest-600">
+              Your reservation is safely recorded. Please complete payment to activate your stay and receive our full hospitality support.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Main Details Card */}
-            <div className="lg:col-span-2">
-              <div className="bg-white p-8 rounded-2xl shadow-lg border border-forest-100 mb-6">
-                <h2 className="font-display text-forest-900 text-2xl font-semibold mb-6 pb-4 border-b border-forest-100">
-                  Booking Details
-                </h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                  {/* Booking & Guest Info */}
+          <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1.15fr_0.85fr]">
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-forest-100 bg-white p-6 shadow-lg sm:p-8">
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                   <div>
-                    <h3 className="text-forest-900 font-semibold mb-3">Booking Information</h3>
-                    <div className="space-y-2 text-forest-700 text-sm">
-                      <p>
-                        <strong>Booking ID:</strong>
-                        <br />
-                        <span className="text-gold-600 font-semibold text-lg">BK{bookingResult.booking.id}</span>
-                      </p>
-                      <p>
-                        <strong>Invoice:</strong> {bookingResult.invoice?.invoice_number || `INV-${bookingResult.booking.id}`}
-                      </p>
-                      <p>
-                        <strong>Status:</strong>
-                        <span className="ml-2 inline-block px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">
-                          {bookingResult.booking.status || 'PENDING'}
-                        </span>
-                      </p>
-                    </div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold-600">Reservation status</p>
+                    <h2 className="mt-1 font-display text-2xl font-semibold text-forest-900">Your stay is on the way</h2>
+                    <p className="mt-2 text-sm text-forest-600">
+                      We have captured your booking details and prepared a premium confirmation experience for your visit.
+                    </p>
                   </div>
-
-                  {/* Guest Info */}
-                  <div>
-                    <h3 className="text-forest-900 font-semibold mb-3">Guest Information</h3>
-                    <div className="space-y-2 text-forest-700 text-sm">
-                      <p>
-                        <strong>Name:</strong> {bookingResult.booking.guest_name}
-                      </p>
-                      <p>
-                        <strong>Email:</strong> {bookingResult.booking.guest_email}
-                      </p>
-                      <p>
-                        <strong>Phone:</strong> {bookingResult.booking.guest_phone}
-                      </p>
-                    </div>
-                  </div>
+                  <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-amber-700">
+                    {bookingResult.booking.payment_status || 'PENDING'}
+                  </span>
                 </div>
 
-                <div className="border-t border-forest-100 pt-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Room Info */}
-                    <div>
-                      <h3 className="text-forest-900 font-semibold mb-3">Room Information</h3>
-                      <div className="space-y-2 text-forest-700 text-sm">
-                        <p>
-                          <strong>Room:</strong> {bookingResult.booking.room.room_number}
-                        </p>
-                        <p>
-                          <strong>Type:</strong> {bookingResult.booking.room.room_type}
-                        </p>
-                        <p>
-                          <strong>Rate:</strong> ₦{bookingResult.booking.room.price_per_night.toLocaleString()}/night
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Stay Dates */}
-                    <div>
-                      <h3 className="text-forest-900 font-semibold mb-3">Stay Dates</h3>
-                      <div className="space-y-2 text-forest-700 text-sm">
-                        <p>
-                          <strong>Check-in:</strong> {bookingDates.checkIn}
-                        </p>
-                        <p>
-                          <strong>Check-out:</strong> {bookingDates.checkOut}
-                        </p>
-                        <p>
-                          <strong>Nights:</strong> {bookingResult.booking.number_of_nights}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                <div className="mt-6">
+                  <BookingReference reference={reservationSummary.bookingReference} />
                 </div>
               </div>
 
-              {/* Amount Card */}
-              <div className="bg-gold-50 p-8 rounded-2xl border border-gold-200">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-forest-600 text-sm font-semibold uppercase">Total Amount Due</p>
-                    <p className="font-display text-forest-900 text-4xl font-semibold">
-                      ₦{bookingResult.booking.total_price.toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-forest-600 text-sm">Payment Status</p>
-                    <p className="inline-block px-4 py-2 bg-red-100 text-red-800 rounded-full text-sm font-semibold mt-1">
-                      {bookingResult.booking.payment_status || 'PENDING'}
-                    </p>
-                  </div>
-                </div>
+              <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+                <ReservationSummary
+                  roomImage={room?.image_url || room?.image}
+                  roomName={reservationSummary.roomName}
+                  roomNumber={reservationSummary.roomNumber}
+                  roomType={room?.room_type || reservationSummary.roomName}
+                  guestCount={reservationSummary.guestCount}
+                  checkIn={bookingDates.checkIn}
+                  checkOut={bookingDates.checkOut}
+                  nights={reservationSummary.nights}
+                  roomRate={reservationSummary.roomRate}
+                  taxes={reservationSummary.taxes}
+                  total={reservationSummary.total}
+                />
+                <PaymentInstructions
+                  amountDue={reservationSummary.total}
+                  bookingReference={reservationSummary.bookingReference}
+                />
               </div>
+
+              <BookingTimeline />
             </div>
 
-            {/* Actions Sidebar */}
-            <div className="lg:col-span-1">
-              <div className="bg-white p-6 rounded-2xl shadow-lg border border-forest-100 sticky top-32">
-                <h3 className="font-display text-forest-900 text-lg font-semibold mb-4">Next Steps</h3>
-
-                <div className="space-y-3">
-                  {/* Primary Action */}
-                  <a
-                    href={bookingResult.payment_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-gold text-forest-900 font-bold py-3 rounded-lg block text-center w-full"
-                  >
-                    💬 Pay on WhatsApp
-                  </a>
-
-                  {/* Download Receipt */}
-                  <button
-                    onClick={handleDownloadReceipt}
-                    className="w-full px-4 py-3 border border-forest-300 text-forest-700 rounded-lg font-semibold text-sm hover:bg-forest-50 transition-colors"
-                  >
-                    📄 Download Receipt
-                  </button>
-
-                  {/* Cancel Booking */}
-                  <button
-                    onClick={handleCancelBooking}
-                    disabled={cancelling}
-                    className="w-full px-4 py-3 border border-red-300 text-red-700 rounded-lg font-semibold text-sm hover:bg-red-50 transition-colors disabled:opacity-50"
-                  >
-                    {cancelling ? '⏳ Cancelling...' : '🗑️ Cancel Reservation'}
-                  </button>
-
-                  {/* Back to Search */}
-                  <a
-                    href="#booking-search"
-                    className="block text-center px-4 py-3 text-forest-600 font-semibold text-sm hover:text-forest-900 transition-colors"
-                  >
-                    ← Back to Search
-                  </a>
+            <div className="space-y-6">
+              <div className="sticky top-32 rounded-2xl border border-forest-100 bg-white p-6 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold-600">Next steps</p>
+                    <h3 className="mt-1 font-display text-xl font-semibold text-forest-900">Complete your payment</h3>
+                  </div>
+                  <div className="rounded-full bg-forest-50 px-3 py-1 text-sm font-semibold text-forest-700">
+                    ₦{reservationSummary.total.toLocaleString()}
+                  </div>
                 </div>
 
-                {/* Info Box */}
-                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-forest-600 text-xs leading-relaxed">
-                    <strong>✓ Cancellation Policy:</strong> Free cancellation up to 24 hours before check-in.
+                <div className="mt-6">
+                  <SuccessActions
+                    onVerifyPayment={handleVerifyPayment}
+                    onDownloadReservation={handleDownloadReceipt}
+                    onPrintReservation={handlePrintReservation}
+                    isDownloading={isDownloadingReceipt}
+                  />
+                </div>
+
+                <div className="mt-6 rounded-xl border border-forest-100 bg-forest-50 p-4">
+                  <p className="text-sm leading-6 text-forest-600">
+                    <span className="font-semibold text-forest-800">Cancellation policy:</span> Free cancellation up to 24 hours before check-in.
+                  </p>
+                </div>
+
+                <div className="mt-6 rounded-xl border border-forest-100 bg-white p-4">
+                  <p className="text-sm font-semibold text-forest-800">Need support?</p>
+                  <p className="mt-2 text-sm leading-6 text-forest-600">
+                    Share your booking reference and we will help verify payment and confirm your stay promptly.
                   </p>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Info Footer */}
-          <div className="mt-12 p-6 bg-forest-50 border border-forest-100 rounded-xl text-center">
-            <p className="text-forest-700 text-sm mb-2">
-              <strong>Complete your payment on WhatsApp</strong> to confirm your booking. Once the manager confirms payment, your reservation will be activated.
-            </p>
-            <p className="text-forest-600 text-xs">
-              Questions? Check your email for booking confirmation or contact us directly.
-            </p>
+              <div className="rounded-2xl border border-forest-100 bg-forest-50 p-6 text-center shadow-sm">
+                <p className="text-sm font-semibold uppercase tracking-[0.25em] text-forest-500">Your reservation summary</p>
+                <p className="mt-3 text-sm leading-6 text-forest-700">
+                  {reservationSummary.guestName} • {reservationSummary.roomName} • {reservationSummary.checkIn} to {reservationSummary.checkOut}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
