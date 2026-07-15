@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { bookingsAPI, roomsAPI, APIValidationError } from '@/lib/api';
@@ -19,6 +20,7 @@ export default function BookingPage() {
   const roomId = searchParams.get('room_id');
 
   const [room, setRoom] = useState<any>(null);
+  const [roomLoading, setRoomLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [formData, setFormData] = useState({
@@ -36,6 +38,27 @@ export default function BookingPage() {
   const [error, setError] = useState<string | null>(null);
   const alertRef = useRef<HTMLDivElement | null>(null);
   const previousRoomIdRef = useRef<string | null>(roomId);
+
+  const today = new Date().toISOString().split('T')[0];
+  const getNextDay = (value: string) => {
+    const nextDate = new Date(value);
+    nextDate.setDate(nextDate.getDate() + 1);
+    return nextDate.toISOString().split('T')[0];
+  };
+  const minCheckoutDate = bookingDates.checkIn ? getNextDay(bookingDates.checkIn) : today;
+  const computedNights = bookingDates.checkIn && bookingDates.checkOut
+    ? Math.max(1, Math.ceil((new Date(bookingDates.checkOut).getTime() - new Date(bookingDates.checkIn).getTime()) / (1000 * 60 * 60 * 24)))
+    : 0;
+  const nightlyTotal = room?.price_per_night ? room.price_per_night * (computedNights || 1) : 0;
+  const estimatedTax = nightlyTotal * 0.075;
+  const estimatedTotal = nightlyTotal + estimatedTax;
+  const buttonLabel = loading
+    ? 'Processing reservation...'
+    : availabilityState.loading
+      ? 'Checking availability...'
+      : availabilityState.checked && availabilityState.available === false
+        ? 'Unavailable'
+        : 'Confirm reservation';
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -128,6 +151,7 @@ export default function BookingPage() {
   }, [room?.id, bookingDates.checkIn, bookingDates.checkOut]);
 
   const fetchRoom = async () => {
+    setRoomLoading(true);
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
       const res = await fetch(`${apiUrl}/rooms/?t=${Date.now()}`, { cache: 'no-store' });
@@ -149,9 +173,11 @@ export default function BookingPage() {
       const roomNum = parseInt(roomId!, 10);
       const found = roomsList.find((r: any) => r.id === roomNum);
       setRoom(found || null);
-    } catch (err: any) {
+    } catch {
       setRoom(null);
       setError('Failed to load room information');
+    } finally {
+      setRoomLoading(false);
     }
   };
 
@@ -507,14 +533,31 @@ export default function BookingPage() {
   // Booking Form Page
   return (
     <div className="py-28 bg-cream">
-      <div className="max-w-2xl mx-auto px-6">
-        <h1 className="font-display text-forest-900 text-3xl font-semibold mb-2">Complete Your Booking</h1>
-        <p className="text-forest-600 mb-8">Fill in your details to reserve your room</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-8 rounded-2xl border border-forest-100 bg-white p-4 shadow-sm sm:p-6">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold-600">Reservation flow</p>
+              <h1 className="font-display text-forest-900 text-3xl font-semibold">Complete Your Booking</h1>
+              <p className="mt-2 text-sm text-forest-600">A polished, guided experience for your stay at Larami.</p>
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.25em] text-forest-600" aria-label="Booking progress">
+              {[{ label: 'Room & dates', active: true }, { label: 'Guest details', active: true }, { label: 'Confirmation', active: false }].map((step, index) => (
+                <span
+                  key={step.label}
+                  className={`rounded-full px-3 py-2 ${step.active ? 'bg-gold-100 text-forest-900' : 'bg-forest-50 text-forest-500'}`}
+                >
+                  {index + 1}. {step.label}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
 
         {alertMessage && (
           <div
             ref={alertRef}
-            className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm"
+            className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm transition-all duration-300"
             role="alert"
             aria-live="polite"
           >
@@ -528,229 +571,329 @@ export default function BookingPage() {
           </div>
         )}
 
-        {room && (
-          <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-lg border border-forest-100">
-            {/* Room Info */}
-            <div className="mb-8 p-6 bg-gold-50 rounded-xl">
-              <h2 className="font-display text-forest-900 text-lg font-semibold mb-3">Room Selected</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-forest-600 text-xs uppercase font-semibold">Room Number</p>
-                  <p className="text-forest-900 font-semibold">{room.room_number}</p>
-                </div>
-                <div>
-                  <p className="text-forest-600 text-xs uppercase font-semibold">Room Type</p>
-                  <p className="text-forest-900 font-semibold">{room.room_type}</p>
-                </div>
-                <div>
-                  <p className="text-forest-600 text-xs uppercase font-semibold">Price per Night</p>
-                  <p className="text-forest-900 font-semibold">₦{room.price_per_night.toLocaleString()}</p>
-                </div>
-                <div>
-                  <p className="text-forest-600 text-xs uppercase font-semibold">Nights</p>
-                  <p className="text-forest-900 font-semibold">{bookingResult?.booking?.number_of_nights || '-'}</p>
-                </div>
-              </div>
-
-              <div className="mt-4 rounded-lg border border-forest-200 bg-white/70 p-4 text-sm text-forest-700">
-                {availabilityState.loading ? (
-                  <p>Checking live availability for your chosen dates...</p>
-                ) : availabilityState.checked && availabilityState.available === true ? (
-                  <p className="text-emerald-700">This room is available for your selected dates.</p>
-                ) : availabilityState.checked && availabilityState.available === false ? (
-                  <p className="text-rose-700">This room is no longer available for the selected dates.</p>
-                ) : null}
+        {roomLoading ? (
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.3fr_0.7fr]">
+            <div className="animate-pulse rounded-2xl border border-forest-100 bg-white p-8 shadow-lg">
+              <div className="mb-6 h-4 w-32 rounded bg-forest-100" />
+              <div className="mb-4 h-8 w-3/4 rounded bg-forest-100" />
+              <div className="mb-6 h-24 rounded-xl bg-forest-50" />
+              <div className="space-y-3">
+                <div className="h-12 rounded-lg bg-forest-100" />
+                <div className="h-12 rounded-lg bg-forest-100" />
+                <div className="h-12 rounded-lg bg-forest-100" />
               </div>
             </div>
+            <div className="animate-pulse rounded-2xl border border-forest-100 bg-white p-6 shadow-lg">
+              <div className="mb-4 h-4 w-24 rounded bg-forest-100" />
+              <div className="mb-6 h-24 rounded-xl bg-forest-50" />
+              <div className="space-y-3">
+                <div className="h-4 w-3/4 rounded bg-forest-100" />
+                <div className="h-4 w-1/2 rounded bg-forest-100" />
+              </div>
+            </div>
+          </div>
+        ) : room ? (
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.3fr_0.7fr]">
+            <form onSubmit={handleSubmit} className="rounded-2xl border border-forest-100 bg-white p-6 shadow-lg sm:p-8">
+              <div className="mb-8 rounded-2xl border border-gold-200 bg-gold-50 p-6">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold-600">Selected room</p>
+                    <h2 className="font-display text-forest-900 text-xl font-semibold">{room.room_type} • Room {room.room_number}</h2>
+                    <p className="mt-2 text-sm text-forest-600">A refined stay with premium comfort and thoughtful service.</p>
+                  </div>
+                  <div className="rounded-xl border border-gold-200 bg-white/80 px-4 py-3 text-sm text-forest-700">
+                    <p className="font-semibold text-forest-900">₦{room.price_per_night.toLocaleString()} / night</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-forest-500">Flexible check-in support</p>
+                  </div>
+                </div>
 
-            {/* Guest Info */}
-            <div className="space-y-6 mb-6">
-              <h3 className="font-display text-forest-900 text-lg font-semibold">Guest Information</h3>
+                <div className="mt-5 rounded-xl border border-forest-200 bg-white/70 p-4 text-sm text-forest-700 transition-all duration-300">
+                  {availabilityState.loading ? (
+                    <div className="flex items-center gap-2 text-forest-600" role="status">
+                      <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-gold-500" />
+                      <span>Checking live availability for your chosen dates...</span>
+                    </div>
+                  ) : availabilityState.checked && availabilityState.available === true ? (
+                    <p className="text-emerald-700">This room is available for your selected dates.</p>
+                  ) : availabilityState.checked && availabilityState.available === false ? (
+                    <p className="text-rose-700">This room is no longer available for the selected dates.</p>
+                  ) : null}
+                </div>
+              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-6 mb-6">
+                <h3 className="font-display text-forest-900 text-lg font-semibold">Guest Information</h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-forest-700 text-sm font-semibold mb-2" htmlFor="check-in">Check-in Date *</label>
+                    <input
+                      id="check-in"
+                      type="date"
+                      min={today}
+                      value={bookingDates.checkIn}
+                      onChange={(e) => {
+                        const nextCheckIn = e.target.value;
+                        const nextCheckOut = bookingDates.checkOut && new Date(bookingDates.checkOut) <= new Date(nextCheckIn)
+                          ? ''
+                          : bookingDates.checkOut;
+                        setBookingDates({ checkIn: nextCheckIn, checkOut: nextCheckOut });
+                        setValidationErrors((prev) => ({ ...prev, checkIn: '' }));
+                        setBackendErrors({ fieldErrors: {}, nonFieldErrors: [] });
+                        setError(null);
+                      }}
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${
+                        validationErrors.checkIn || backendErrors.fieldErrors.check_in?.length
+                          ? 'border-red-400'
+                          : 'border-forest-200'
+                      }`}
+                      placeholder="YYYY-MM-DD"
+                      aria-describedby="date-help"
+                    />
+                    {validationErrors.checkIn && <p className="mt-2 text-sm text-red-600">{validationErrors.checkIn}</p>}
+                    {backendErrors.fieldErrors.check_in?.map((msg, idx) => (
+                      <p key={idx} className="mt-2 text-sm text-red-600">{msg}</p>
+                    ))}
+                  </div>
+
+                  <div>
+                    <label className="block text-forest-700 text-sm font-semibold mb-2" htmlFor="check-out">Check-out Date *</label>
+                    <input
+                      id="check-out"
+                      type="date"
+                      min={minCheckoutDate}
+                      value={bookingDates.checkOut}
+                      onChange={(e) => {
+                        setBookingDates((prev) => ({ ...prev, checkOut: e.target.value }));
+                        setValidationErrors((prev) => ({ ...prev, checkOut: '' }));
+                        setBackendErrors({ fieldErrors: {}, nonFieldErrors: [] });
+                        setError(null);
+                      }}
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${
+                        validationErrors.checkOut || backendErrors.fieldErrors.check_out?.length
+                          ? 'border-red-400'
+                          : 'border-forest-200'
+                      }`}
+                      placeholder="YYYY-MM-DD"
+                      aria-describedby="date-help"
+                    />
+                    {validationErrors.checkOut && <p className="mt-2 text-sm text-red-600">{validationErrors.checkOut}</p>}
+                    {backendErrors.fieldErrors.check_out?.map((msg, idx) => (
+                      <p key={idx} className="mt-2 text-sm text-red-600">{msg}</p>
+                    ))}
+                  </div>
+                </div>
+
+                <p id="date-help" className="text-sm text-forest-500">Choose dates that keep your stay comfortable and your check-out after your arrival.</p>
+
                 <div>
-                  <label className="block text-forest-700 text-sm font-semibold mb-2">Check-in Date *</label>
+                  <label className="block text-forest-700 text-sm font-semibold mb-2" htmlFor="guest-name">Full Name *</label>
                   <input
-                    type="date"
-                    value={bookingDates.checkIn}
+                    id="guest-name"
+                    type="text"
+                    value={formData.guest_name}
                     onChange={(e) => {
-                      setBookingDates((prev) => ({ ...prev, checkIn: e.target.value }));
-                      setValidationErrors((prev) => ({ ...prev, checkIn: '' }));
-                      setBackendErrors({ fieldErrors: {}, nonFieldErrors: [] });
-                      setError(null);
+                      setFormData({ ...formData, guest_name: e.target.value });
+                      setValidationErrors((prev) => ({ ...prev, guest_name: '' }));
+                      setBackendErrors((prev) => ({
+                        ...prev,
+                        fieldErrors: { ...prev.fieldErrors, guest_name: [] },
+                      }));
                     }}
                     className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${
-                      validationErrors.checkIn || backendErrors.fieldErrors.check_in?.length
+                      validationErrors.guest_name || backendErrors.fieldErrors.guest_name?.length
                         ? 'border-red-400'
                         : 'border-forest-200'
                     }`}
-                    placeholder="YYYY-MM-DD"
+                    placeholder="John Doe"
                   />
-                  {validationErrors.checkIn && <p className="mt-2 text-sm text-red-600">{validationErrors.checkIn}</p>}
-                  {backendErrors.fieldErrors.check_in?.map((msg, idx) => (
-                    <p key={idx} className="mt-2 text-sm text-red-600">
-                      {msg}
-                    </p>
+                  {validationErrors.guest_name && <p className="mt-2 text-sm text-red-600">{validationErrors.guest_name}</p>}
+                  {backendErrors.fieldErrors.guest_name?.map((msg, idx) => (
+                    <p key={idx} className="mt-2 text-sm text-red-600">{msg}</p>
                   ))}
                 </div>
 
                 <div>
-                  <label className="block text-forest-700 text-sm font-semibold mb-2">Check-out Date *</label>
+                  <label className="block text-forest-700 text-sm font-semibold mb-2" htmlFor="guest-email">Email *</label>
                   <input
-                    type="date"
-                    value={bookingDates.checkOut}
+                    id="guest-email"
+                    type="email"
+                    value={formData.guest_email}
                     onChange={(e) => {
-                      setBookingDates((prev) => ({ ...prev, checkOut: e.target.value }));
-                      setValidationErrors((prev) => ({ ...prev, checkOut: '' }));
-                      setBackendErrors({ fieldErrors: {}, nonFieldErrors: [] });
-                      setError(null);
+                      setFormData({ ...formData, guest_email: e.target.value });
+                      setValidationErrors((prev) => ({ ...prev, guest_email: '' }));
+                      setBackendErrors((prev) => ({
+                        ...prev,
+                        fieldErrors: { ...prev.fieldErrors, guest_email: [] },
+                      }));
                     }}
                     className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${
-                      validationErrors.checkOut || backendErrors.fieldErrors.check_out?.length
+                      validationErrors.guest_email || backendErrors.fieldErrors.guest_email?.length
                         ? 'border-red-400'
                         : 'border-forest-200'
                     }`}
-                    placeholder="YYYY-MM-DD"
+                    placeholder="john@example.com"
                   />
-                  {validationErrors.checkOut && <p className="mt-2 text-sm text-red-600">{validationErrors.checkOut}</p>}
-                  {backendErrors.fieldErrors.check_out?.map((msg, idx) => (
-                    <p key={idx} className="mt-2 text-sm text-red-600">
-                      {msg}
-                    </p>
+                  {validationErrors.guest_email && <p className="mt-2 text-sm text-red-600">{validationErrors.guest_email}</p>}
+                  {backendErrors.fieldErrors.guest_email?.map((msg, idx) => (
+                    <p key={idx} className="mt-2 text-sm text-red-600">{msg}</p>
                   ))}
+                </div>
+
+                <div>
+                  <label className="block text-forest-700 text-sm font-semibold mb-2" htmlFor="guest-phone">Phone Number *</label>
+                  <input
+                    id="guest-phone"
+                    type="tel"
+                    value={formData.guest_phone}
+                    onChange={(e) => {
+                      setFormData({ ...formData, guest_phone: e.target.value });
+                      setValidationErrors((prev) => ({ ...prev, guest_phone: '' }));
+                      setBackendErrors((prev) => ({
+                        ...prev,
+                        fieldErrors: { ...prev.fieldErrors, guest_phone: [] },
+                      }));
+                    }}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${
+                      validationErrors.guest_phone || backendErrors.fieldErrors.guest_phone?.length
+                        ? 'border-red-400'
+                        : 'border-forest-200'
+                    }`}
+                    placeholder="+234XXXXXXXXXX"
+                  />
+                  {validationErrors.guest_phone && <p className="mt-2 text-sm text-red-600">{validationErrors.guest_phone}</p>}
+                  {backendErrors.fieldErrors.guest_phone?.map((msg, idx) => (
+                    <p key={idx} className="mt-2 text-sm text-red-600">{msg}</p>
+                  ))}
+                </div>
+
+                <div>
+                  <label className="block text-forest-700 text-sm font-semibold mb-2" htmlFor="guest-count">Number of Guests *</label>
+                  <select
+                    id="guest-count"
+                    value={formData.number_of_guests}
+                    onChange={(e) => {
+                      setFormData({ ...formData, number_of_guests: parseInt(e.target.value, 10) });
+                      setBackendErrors({ fieldErrors: {}, nonFieldErrors: [] });
+                      setError(null);
+                    }}
+                    className="w-full px-4 py-3 border border-forest-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500"
+                  >
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <option key={n} value={n}>
+                        {n} {n === 1 ? 'Guest' : 'Guests'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-forest-700 text-sm font-semibold mb-2" htmlFor="special-requests">Special Requests</label>
+                  <textarea
+                    id="special-requests"
+                    value={formData.special_requests}
+                    onChange={(e) => setFormData({ ...formData, special_requests: e.target.value })}
+                    placeholder="E.g., Late check-in, extra bed, high floor, etc."
+                    rows={4}
+                    className="w-full px-4 py-3 border border-forest-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500"
+                  />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-forest-700 text-sm font-semibold mb-2">Full Name *</label>
-                <input
-                  type="text"
-                  value={formData.guest_name}
-                  onChange={(e) => {
-                    setFormData({ ...formData, guest_name: e.target.value });
-                    setValidationErrors((prev) => ({ ...prev, guest_name: '' }));
-                    setBackendErrors((prev) => ({
-                      ...prev,
-                      fieldErrors: { ...prev.fieldErrors, guest_name: [] },
-                    }));
-                  }}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${
-                    validationErrors.guest_name || backendErrors.fieldErrors.guest_name?.length
-                      ? 'border-red-400'
-                      : 'border-forest-200'
-                  }`}
-                  placeholder="John Doe"
-                />
-                {validationErrors.guest_name && <p className="mt-2 text-sm text-red-600">{validationErrors.guest_name}</p>}
-                {backendErrors.fieldErrors.guest_name?.map((msg, idx) => (
-                  <p key={idx} className="mt-2 text-sm text-red-600">
-                    {msg}
-                  </p>
-                ))}
+              <div className="mb-6 rounded-xl border border-forest-100 bg-forest-50 p-4">
+                <p className="text-sm text-forest-600">
+                  <strong>✓ Cancellation Policy:</strong> Free cancellation up to 24 hours before check-in.
+                </p>
               </div>
 
-              <div>
-                <label className="block text-forest-700 text-sm font-semibold mb-2">Email *</label>
-                <input
-                  type="email"
-                  value={formData.guest_email}
-                  onChange={(e) => {
-                    setFormData({ ...formData, guest_email: e.target.value });
-                    setValidationErrors((prev) => ({ ...prev, guest_email: '' }));
-                    setBackendErrors((prev) => ({
-                      ...prev,
-                      fieldErrors: { ...prev.fieldErrors, guest_email: [] },
-                    }));
-                  }}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${
-                    validationErrors.guest_email || backendErrors.fieldErrors.guest_email?.length
-                      ? 'border-red-400'
-                      : 'border-forest-200'
-                  }`}
-                  placeholder="john@example.com"
-                />
-                {validationErrors.guest_email && <p className="mt-2 text-sm text-red-600">{validationErrors.guest_email}</p>}
-                {backendErrors.fieldErrors.guest_email?.map((msg, idx) => (
-                  <p key={idx} className="mt-2 text-sm text-red-600">
-                    {msg}
-                  </p>
-                ))}
+              <button
+                type="submit"
+                disabled={loading || availabilityState.loading || (availabilityState.checked && availabilityState.available === false)}
+                className="w-full rounded-xl bg-gold-500 px-4 py-3 font-semibold text-forest-900 transition-all duration-300 hover:bg-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {buttonLabel}
+              </button>
+            </form>
+
+            <aside className="xl:sticky xl:top-24 xl:self-start">
+              <div className="rounded-2xl border border-forest-100 bg-white p-6 shadow-lg">
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold-600">Stay summary</p>
+                    <h3 className="font-display text-forest-900 text-xl font-semibold">Your reservation</h3>
+                  </div>
+                  <div className="rounded-full bg-forest-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-forest-600">
+                    Live update
+                  </div>
+                </div>
+
+                <div className="mb-5 overflow-hidden rounded-xl border border-forest-100">
+                  {roomLoading ? (
+                    <div className="animate-pulse space-y-3 p-4">
+                      <div className="h-20 rounded-lg bg-forest-100" />
+                      <div className="h-4 w-2/3 rounded bg-forest-100" />
+                      <div className="h-4 w-1/2 rounded bg-forest-100" />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="relative h-32">
+                        <Image
+                          src={room.image_url || 'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=900&q=80&auto=format&fit=crop'}
+                          alt={room.room_type}
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-forest-950/50 to-transparent" />
+                      </div>
+                      <div className="p-4">
+                        <p className="font-display text-lg font-semibold text-forest-900">{room.room_type}</p>
+                        <p className="text-sm text-forest-600">Room {room.room_number}</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <dl className="space-y-3 text-sm text-forest-700">
+                  <div className="flex items-center justify-between">
+                    <dt className="text-forest-500">Check-in</dt>
+                    <dd className="font-semibold text-forest-900">{bookingDates.checkIn || 'Select date'}</dd>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <dt className="text-forest-500">Check-out</dt>
+                    <dd className="font-semibold text-forest-900">{bookingDates.checkOut || 'Select date'}</dd>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <dt className="text-forest-500">Nights</dt>
+                    <dd className="font-semibold text-forest-900">{computedNights || 0}</dd>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <dt className="text-forest-500">Guests</dt>
+                    <dd className="font-semibold text-forest-900">{formData.number_of_guests}</dd>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <dt className="text-forest-500">Rate / night</dt>
+                    <dd className="font-semibold text-forest-900">₦{room?.price_per_night?.toLocaleString() || 0}</dd>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <dt className="text-forest-500">Estimated tax</dt>
+                    <dd className="font-semibold text-forest-900">₦{estimatedTax.toLocaleString()}</dd>
+                  </div>
+                </dl>
+
+                <div className="mt-5 border-t border-forest-100 pt-4">
+                  <div className="flex items-center justify-between text-base">
+                    <span className="font-semibold text-forest-700">Estimated total</span>
+                    <span className="font-display text-xl font-semibold text-forest-900">₦{estimatedTotal.toLocaleString()}</span>
+                  </div>
+                </div>
               </div>
-
-              <div>
-                <label className="block text-forest-700 text-sm font-semibold mb-2">Phone Number *</label>
-                <input
-                  type="tel"
-                  value={formData.guest_phone}
-                  onChange={(e) => {
-                    setFormData({ ...formData, guest_phone: e.target.value });
-                    setValidationErrors((prev) => ({ ...prev, guest_phone: '' }));
-                    setBackendErrors((prev) => ({
-                      ...prev,
-                      fieldErrors: { ...prev.fieldErrors, guest_phone: [] },
-                    }));
-                  }}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${
-                    validationErrors.guest_phone || backendErrors.fieldErrors.guest_phone?.length
-                      ? 'border-red-400'
-                      : 'border-forest-200'
-                  }`}
-                  placeholder="+234XXXXXXXXXX"
-                />
-                {validationErrors.guest_phone && <p className="mt-2 text-sm text-red-600">{validationErrors.guest_phone}</p>}
-                {backendErrors.fieldErrors.guest_phone?.map((msg, idx) => (
-                  <p key={idx} className="mt-2 text-sm text-red-600">
-                    {msg}
-                  </p>
-                ))}
-              </div>
-
-              <div>
-                <label className="block text-forest-700 text-sm font-semibold mb-2">Number of Guests *</label>
-                <select
-                  value={formData.number_of_guests}
-                  onChange={(e) => {
-                    setFormData({ ...formData, number_of_guests: parseInt(e.target.value, 10) });
-                    setBackendErrors({ fieldErrors: {}, nonFieldErrors: [] });
-                    setError(null);
-                  }}
-                  className="w-full px-4 py-3 border border-forest-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500"
-                >
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <option key={n} value={n}>
-                      {n} {n === 1 ? 'Guest' : 'Guests'}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-forest-700 text-sm font-semibold mb-2">Special Requests</label>
-                <textarea
-                  value={formData.special_requests}
-                  onChange={(e) => setFormData({ ...formData, special_requests: e.target.value })}
-                  placeholder="E.g., Late check-in, extra bed, high floor, etc."
-                  rows={4}
-                  className="w-full px-4 py-3 border border-forest-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500"
-                />
-              </div>
-            </div>
-
-            {/* Terms */}
-            <div className="mb-6 p-4 bg-forest-50 rounded-lg border border-forest-100">
-              <p className="text-forest-600 text-sm">
-                <strong>✓ Cancellation Policy:</strong> Free cancellation up to 24 hours before check-in.
-              </p>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading || availabilityState.loading || (availabilityState.checked && availabilityState.available === false)}
-              className="btn-gold text-forest-900 font-bold py-3 rounded-lg w-full disabled:opacity-50"
-            >
-              {loading ? '⏳ Processing...' : 'Book Now'}
-            </button>
-          </form>
+            </aside>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-forest-100 bg-white p-8 text-center shadow-lg">
+            <p className="text-forest-600">We could not load the selected room. Please return to search and try again.</p>
+          </div>
         )}
       </div>
     </div>
