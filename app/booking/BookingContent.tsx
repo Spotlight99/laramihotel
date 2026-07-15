@@ -128,47 +128,28 @@ export default function BookingPage() {
   }, [room?.id, bookingDates.checkIn, bookingDates.checkOut]);
 
   const fetchRoom = async () => {
-    console.log('🔥 fetchRoom called, roomId:', roomId);
-
     try {
-      // Fetch directly to bypass any API layer issues
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-      console.log('🔥 API URL:', apiUrl);
-
       const res = await fetch(`${apiUrl}/rooms/?t=${Date.now()}`, { cache: 'no-store' });
-      console.log('🔥 Fetch response status:', res.status);
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();
-      console.log('🔥 Raw API response:', data);
 
-      // Extract rooms array - handle both formats
       let roomsList: any[] = [];
       if (Array.isArray(data)) {
         roomsList = data;
-        console.log('🔥 Data is array');
       } else if (data?.results && Array.isArray(data.results)) {
         roomsList = data.results;
-        console.log('🔥 Extracted from data.results');
       } else {
-        console.error('🔥 ERROR: Unexpected response format', data);
         setRoom(null);
         return;
       }
 
-      console.log('🔥 Rooms list:', roomsList, 'length:', roomsList.length);
-
-      // Find room
       const roomNum = parseInt(roomId!, 10);
-      console.log('🔥 Looking for room id:', roomNum);
-
       const found = roomsList.find((r: any) => r.id === roomNum);
-      console.log('🔥 Found room:', found);
-
       setRoom(found || null);
     } catch (err: any) {
-      console.error('🔥 ERROR:', err?.message || err);
       setRoom(null);
       setError('Failed to load room information');
     }
@@ -325,11 +306,9 @@ export default function BookingPage() {
       // Try PDF first, fall back to text
       const result = await generateReceiptPDF(receiptData);
       if (!result.success) {
-        console.warn('PDF generation failed, falling back to text:', result.error);
         downloadReceiptAsText(receiptData);
       }
-    } catch (error: any) {
-      console.error('Error downloading receipt:', error);
+    } catch {
       alert('Failed to generate receipt. Please try again.');
     }
   };

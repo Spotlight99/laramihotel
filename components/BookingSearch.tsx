@@ -1,7 +1,7 @@
 'use client';
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { roomsAPI } from "@/lib/api";
 
 interface AvailableRoom {
@@ -12,6 +12,7 @@ interface AvailableRoom {
   capacity: number;
   amenities: string[];
   image_url: string;
+  isAvailable: boolean;
 }
 
 export default function BookingSearch() {
@@ -19,9 +20,32 @@ export default function BookingSearch() {
   const [checkOut, setCheckOut] = useState('');
   const [roomType, setRoomType] = useState('');
   const [availableRooms, setAvailableRooms] = useState<AvailableRoom[]>([]);
+  const [allRooms, setAllRooms] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const lastRequestKeyRef = useRef<string | null>(null);
+  const requestSequenceRef = useRef(0);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    roomsAPI.getAll()
+      .then((rooms) => {
+        if (isMounted) {
+          setAllRooms(rooms);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setAllRooms([]);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const searchRooms = async () => {
     if (!checkIn || !checkOut) {
@@ -41,22 +65,49 @@ export default function BookingSearch() {
       return;
     }
 
+    const requestKey = `${checkIn}|${checkOut}|${roomType || 'all'}`;
+    if (lastRequestKeyRef.current === requestKey) {
+      return;
+    }
+
+    lastRequestKeyRef.current = requestKey;
+    const requestId = ++requestSequenceRef.current;
     setLoading(true);
     setSearched(true);
     setStatusMessage(null);
 
     try {
-      const rooms = await roomsAPI.getAvailable(checkIn, checkOut, roomType || undefined);
-      setAvailableRooms(rooms);
-      if (rooms.length === 0) {
+      const roomCatalog = allRooms.length > 0 ? allRooms : await roomsAPI.getAll();
+      if (allRooms.length === 0) {
+        setAllRooms(roomCatalog);
+      }
+
+      const availableRoomsData = await roomsAPI.getAvailable(checkIn, checkOut, roomType || undefined);
+
+      if (requestId !== requestSequenceRef.current) {
+        return;
+      }
+
+      const availableRoomIds = new Set(availableRoomsData.map((room: any) => String(room.id)));
+      const mergedRooms = (roomType ? roomCatalog.filter((room: any) => room.room_type === roomType) : roomCatalog)
+        .map((room: any) => ({
+          ...room,
+          isAvailable: availableRoomIds.has(String(room.id)),
+        }));
+
+      setAvailableRooms(mergedRooms);
+      if (mergedRooms.length === 0) {
+        setStatusMessage('No rooms match your selected filters.');
+      } else if (!mergedRooms.some((room) => room.isAvailable)) {
         setStatusMessage('No rooms are available for those dates. Please try a different range.');
       }
-    } catch (error) {
-      console.error('Search failed:', error);
+    } catch {
       setAvailableRooms([]);
       setStatusMessage('We could not load availability right now. Please try again.');
     } finally {
-      setLoading(false);
+      if (requestId === requestSequenceRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -172,8 +223,8 @@ export default function BookingSearch() {
                         <h4 className="font-display text-forest-900 text-lg font-semibold">
                           Room {room.room_number}
                         </h4>
-                        <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
-                          Available
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${room.isAvailable ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                          {room.isAvailable ? 'Available' : 'Unavailable'}
                         </span>
                       </div>
                       <p className="text-forest-600 text-sm font-light mb-3">{room.room_type}</p>
@@ -196,12 +247,22 @@ export default function BookingSearch() {
                         </div>
                       </div>
 
-                      <a
-                        href={`/booking?room_id=${room.id}&check_in=${checkIn}&check_out=${checkOut}`}
-                        className="btn-gold text-forest-900 font-bold py-2 rounded-lg block text-center w-full"
-                      >
-                        Book Now
-                      </a>
+                      {room.isAvailable ? (
+                        <a
+                          href={`/booking?room_id=${room.id}&check_in=${checkIn}&check_out=${checkOut}`}
+                          className="btn-gold text-forest-900 font-bold py-2 rounded-lg block text-center w-full"
+                        >
+                          Book Now
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled
+                          className="w-full cursor-not-allowed rounded-lg border border-forest-200 bg-forest-50 py-2 font-semibold text-forest-500"
+                        >
+                          Unavailable
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

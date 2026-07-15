@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { roomsAPI } from "@/lib/api";
 
 interface Room {
@@ -70,18 +70,15 @@ export default function Rooms() {
   const [availabilityMap, setAvailabilityMap] = useState<Record<number, boolean>>({});
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [availabilityMessage, setAvailabilityMessage] = useState<string | null>(null);
+  const availabilityRequestRef = useRef(0);
 
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        console.log('🔄 Fetching rooms for home page display...');
         const data = await roomsAPI.getAll();
-        console.log('✅ Rooms loaded:', data.length, 'rooms');
         setRooms(data);
         setError(null);
       } catch (err: any) {
-        console.error('❌ Failed to fetch rooms:', err?.message);
-        console.log('⚠️  Using fallback display rooms');
         setError(err?.message || 'Failed to load rooms');
         // Show fallback rooms - still functional but not live data
       } finally {
@@ -108,13 +105,14 @@ export default function Rooms() {
       return;
     }
 
+    const requestId = ++availabilityRequestRef.current;
     let isMounted = true;
     setAvailabilityLoading(true);
     setAvailabilityMessage(null);
 
     roomsAPI.getAvailable(checkIn, checkOut)
       .then((availableRooms: any[]) => {
-        if (!isMounted) return;
+        if (!isMounted || requestId !== availabilityRequestRef.current) return;
         const nextAvailability = Object.fromEntries(availableRooms.map((room: any) => [room.id, true]));
         setAvailabilityMap(nextAvailability);
         if (availableRooms.length === 0) {
@@ -122,12 +120,12 @@ export default function Rooms() {
         }
       })
       .catch(() => {
-        if (!isMounted) return;
+        if (!isMounted || requestId !== availabilityRequestRef.current) return;
         setAvailabilityMap({});
         setAvailabilityMessage('We could not verify live availability for those dates.');
       })
       .finally(() => {
-        if (isMounted) {
+        if (isMounted && requestId === availabilityRequestRef.current) {
           setAvailabilityLoading(false);
         }
       });

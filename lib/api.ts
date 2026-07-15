@@ -11,18 +11,9 @@ if (typeof window !== 'undefined') {
   const isProduction = process.env.NODE_ENV === 'production';
   const isLocalhost = API_BASE_URL.includes('localhost');
   
-  console.log('🔧 API Configuration:', {
-    API_BASE_URL,
-    environment: process.env.NODE_ENV,
-    isLocalhost,
-    timestamp: new Date().toISOString(),
-  });
-  
   // Warn if using localhost in production
   if (isProduction && isLocalhost) {
-    console.error('⚠️  CRITICAL: Using localhost in production! This will fail.');
-    console.error('⚠️  Set NEXT_PUBLIC_API_URL in Vercel Environment Variables');
-    console.error('⚠️  Expected: https://your-backend-url/api');
+    console.warn('Using localhost in production. Set NEXT_PUBLIC_API_URL in Vercel Environment Variables.');
   }
 }
 
@@ -58,7 +49,7 @@ const makeRequest = async (url: string, options: RequestInit = {}) => {
         if (errorText) errorMessage = errorText;
       }
       
-      console.error(`❌ API Error: ${url}`, {
+      console.warn(`API Error: ${url}`, {
         status: response.status,
         message: errorMessage,
         data: errorData,
@@ -70,7 +61,7 @@ const makeRequest = async (url: string, options: RequestInit = {}) => {
     
     return response;
   } catch (error: any) {
-    console.error(`❌ Request failed: ${url}`, {
+    console.warn(`Request failed: ${url}`, {
       error: error?.message,
       url,
     });
@@ -128,14 +119,11 @@ export const roomsAPI = {
       ...(roomType && { room_type: roomType }),
     });
     const url = `${API_BASE_URL}/rooms/available/?${params}`;
-    console.log('📡 Fetching available rooms:', { url, checkIn, checkOut, roomType });
-    
     const res = await makeRequest(url);
     const data = await res.json();
     
     // Handle both array and paginated responses
     const rooms = Array.isArray(data) ? data : (data?.results || []);
-    console.log('✅ Available rooms fetched:', { count: rooms.length });
     return rooms;
   },
 
@@ -146,8 +134,6 @@ export const roomsAPI = {
 
   getAll: async () => {
     const url = `${API_BASE_URL}/rooms/?t=${Date.now()}`;
-    console.log('📡 Fetching all rooms:', url);
-    
     const res = await makeRequest(url, {
       cache: 'no-store',
       headers: {
@@ -156,38 +142,26 @@ export const roomsAPI = {
     });
 
     const data = await res.json();
-    console.log('📦 Raw API response:', { 
-      dataType: typeof data,
-      isArray: Array.isArray(data),
-      hasResults: !!data?.results,
-    });
-
     // Determine what we got and extract the array
     let result: any[] = [];
     
     if (Array.isArray(data)) {
       result = data;
-      console.log('✅ Response is array');
     } else if (data?.results && Array.isArray(data.results)) {
       result = data.results;
-      console.log('✅ Extracted results array');
     } else {
-      console.error('❌ Unexpected response format from API:', data);
+      console.warn('Unexpected response format from API:', data);
       throw new Error('Invalid response format from /rooms/ endpoint');
     }
     
-    console.log('✅ All rooms fetched:', { count: result.length });
     return result;
   },
 
   getHotelInfo: async () => {
     const url = `${API_BASE_URL}/rooms/hotel_info/`;
-    console.log('📡 Fetching hotel info:', url);
-    
     const res = await makeRequest(url);
     const data = await res.json();
     
-    console.log('✅ Hotel info fetched');
     return data;
   },
 };
@@ -203,7 +177,6 @@ export const bookingsAPI = {
     }
 
     const url = `${API_BASE_URL}/bookings/`;
-    console.log('📡 Creating booking:', { url, roomId: booking.room_id });
     
     const res = await makeRequest(url, {
       method: 'POST',
@@ -212,7 +185,6 @@ export const bookingsAPI = {
     });
 
     const data = await res.json();
-    console.log('✅ Booking created:', { bookingId: data?.id });
     return data;
   },
 
