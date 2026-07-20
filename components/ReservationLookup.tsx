@@ -189,51 +189,54 @@ export default function ReservationLookup() {
   };
 
   return (
-    <div id="check-reservation" className="py-16 bg-cream">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6">
-        {/* Section Header */}
-        <div className="text-center mb-12">
-          <p className="text-gold-500 text-xs tracking-[0.35em] uppercase font-body font-light mb-4">
+    <div id="check-reservation" className="py-8 sm:py-12">
+      <div className="mx-auto max-w-5xl px-2 sm:px-6">
+        <div className="mb-10 text-center sm:mb-12">
+          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.35em] text-gold-400/90">
             Manage Your Booking
           </p>
-          <div className="flex justify-center mb-4">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <div className="mb-4 flex justify-center">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="drop-shadow-[0_0_8px_rgba(201,144,26,0.4)]">
               <path d="M7 0L8.3 5.7L14 7L8.3 8.3L7 14L5.7 8.3L0 7L5.7 5.7Z" fill="#c9901a" />
             </svg>
           </div>
-          <h2 className="font-display text-forest-900 font-semibold text-4xl md:text-5xl mb-4">
+          <h2 className="mb-4 font-display text-4xl font-semibold text-white sm:text-5xl">
             Check Your Reservation
           </h2>
-          <p className="text-forest-600 font-body font-light text-base md:text-lg max-w-2xl mx-auto">
+          <p className="mx-auto max-w-2xl text-base leading-8 text-white/70 sm:text-lg">
             Enter your booking details to view, manage, or download your reservation information.
           </p>
         </div>
 
-        {/* Search Form */}
-        <form onSubmit={handleSearch} className="mb-12 p-8 bg-white rounded-2xl shadow-lg border border-forest-100 overflow-hidden">
-          <h3 className="font-display text-forest-900 text-xl font-semibold mb-6">Search Your Reservation</h3>
+        <form onSubmit={handleSearch} className="mb-12 overflow-hidden rounded-[28px] border border-white/10 bg-white/10 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.25)] backdrop-blur-xl sm:p-8 lg:p-10">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold-500/20 text-gold-400">
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                <path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <h3 className="font-display text-xl font-semibold text-white">Search Your Reservation</h3>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {/* Search Type */}
-            <div className="md:col-span-1">
-              <label className="block text-forest-700 text-sm font-semibold mb-2">Search By</label>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[1.1fr_1.3fr_0.9fr] lg:gap-5">
+            <div>
+              <label className="mb-2 block text-sm font-semibold uppercase tracking-[0.2em] text-white/70">Search By</label>
               <select
                 value={searchType}
                 onChange={(e) => {
                   setSearchType(e.target.value as 'booking_id' | 'email' | 'phone');
                   setSearchValue('');
                 }}
-                className="w-full px-4 py-3 border border-forest-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 bg-white text-forest-900"
+                className="w-full rounded-2xl border border-white/15 bg-white/10 px-4 py-3.5 text-sm text-white outline-none transition focus:border-gold-400 focus:ring-2 focus:ring-gold-400/30"
               >
-                <option value="email">Email Address</option>
-                <option value="phone">Phone Number</option>
-                <option value="booking_id">Booking ID</option>
+                <option value="email" className="bg-forest-950 text-white">Email Address</option>
+                <option value="phone" className="bg-forest-950 text-white">Phone Number</option>
+                <option value="booking_id" className="bg-forest-950 text-white">Booking ID</option>
               </select>
             </div>
 
-            {/* Search Value */}
-            <div className="md:col-span-1">
-              <label className="block text-forest-700 text-sm font-semibold mb-2">
+            <div>
+              <label className="mb-2 block text-sm font-semibold uppercase tracking-[0.2em] text-white/70">
                 {searchType === 'email' && 'Email Address'}
                 {searchType === 'phone' && 'Phone Number'}
                 {searchType === 'booking_id' && 'Booking ID'}
@@ -250,24 +253,23 @@ export default function ReservationLookup() {
                       : 'BK-001'
                 }
                 required
-                className="w-full px-4 py-3 border border-forest-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 text-forest-900 placeholder-forest-400"
+                className="w-full rounded-2xl border border-white/15 bg-white/10 px-4 py-3.5 text-sm text-white placeholder-white/40 outline-none transition focus:border-gold-400 focus:ring-2 focus:ring-gold-400/30"
               />
             </div>
 
-            {/* Search Button */}
-            <div className="flex items-end md:col-span-1">
+            <div className="flex items-end">
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full btn-gold text-forest-900 font-bold py-3 rounded-lg disabled:opacity-50 transition-all font-display text-sm uppercase tracking-wide"
+                className="w-full rounded-2xl bg-gradient-to-r from-gold-500 via-gold-400 to-gold-600 px-4 py-3.5 font-display text-sm font-semibold uppercase tracking-[0.2em] text-forest-950 shadow-[0_12px_30px_rgba(201,144,26,0.25)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_36px_rgba(201,144,26,0.35)] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loading ? '⏳ Searching...' : '🔍 Search'}
+                {loading ? 'Searching...' : 'Search'}
               </button>
             </div>
           </div>
 
           {error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="mt-6 rounded-2xl border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-200">
               {error}
             </div>
           )}
