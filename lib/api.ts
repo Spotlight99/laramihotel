@@ -202,15 +202,16 @@ export const bookingsAPI = {
     return data;
   },
 
-  getById: async (id: number, token: string) => {
+  getById: async (id: number, token?: string) => {
     const url = `${API_BASE_URL}/bookings/${id}/`;
     console.log('📡 Fetching booking:', { url, id });
     
-    const res = await makeRequest(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const headers: HeadersInit = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    
+    const res = await makeRequest(url, { headers });
     
     const data = await res.json();
     console.log('✅ Booking fetched:', { id: data?.id });

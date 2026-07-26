@@ -424,8 +424,6 @@ export default function BookingPage() {
                   checkOut={bookingDates.checkOut}
                   nights={reservationSummary.nights}
                   roomRate={reservationSummary.roomRate}
-                  taxes={reservationSummary.taxes}
-                  total={reservationSummary.total}
                 />
                 <PaymentInstructions
                   amountDue={reservationSummary.total}

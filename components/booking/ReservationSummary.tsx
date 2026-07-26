@@ -13,8 +13,6 @@ interface ReservationSummaryProps {
   checkOut: string;
   nights: number;
   roomRate: number;
-  taxes: number;
-  total: number;
 }
 
 export default function ReservationSummary({
@@ -27,11 +25,9 @@ export default function ReservationSummary({
   checkOut,
   nights,
   roomRate,
-  taxes,
-  total,
 }: ReservationSummaryProps) {
   return (
-    <div className="rounded-2xl border border-forest-100 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-forest-100 bg-white p-6 shadow-sm">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold-600">Reservation summary</p>
@@ -58,7 +54,7 @@ export default function ReservationSummary({
         </div>
       </div>
 
-      <dl className="mt-5 space-y-3 text-sm text-forest-700">
+      <dl className="mt-5 space-y-4 text-sm text-forest-700 pb-3">
         <div className="flex items-center justify-between">
           <dt className="text-forest-500">Guests</dt>
           <dd className="font-semibold text-forest-900">{guestCount}</dd>
@@ -75,18 +71,7 @@ export default function ReservationSummary({
           <dt className="text-forest-500">Room rate</dt>
           <dd className="font-semibold text-forest-900">{formatCurrency(roomRate)}</dd>
         </div>
-        <div className="flex items-center justify-between">
-          <dt className="text-forest-500">Taxes</dt>
-          <dd className="font-semibold text-forest-900">{formatCurrency(taxes)}</dd>
-        </div>
       </dl>
-
-      <div className="mt-5 border-t border-forest-100 pt-4">
-        <div className="flex items-center justify-between">
-          <span className="font-semibold text-forest-700">Grand total</span>
-          <span className="font-display text-xl font-semibold text-forest-900">{formatCurrency(total)}</span>
-        </div>
-      </div>
     </div>
   );
 }
