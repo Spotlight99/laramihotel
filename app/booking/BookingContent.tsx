@@ -832,18 +832,7 @@ export default function BookingPage() {
                     <dt className="text-forest-500">Rate / night</dt>
                     <dd className="font-semibold text-forest-900">₦{room?.price_per_night?.toLocaleString() || 0}</dd>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <dt className="text-forest-500">Estimated tax</dt>
-                    <dd className="font-semibold text-forest-900">₦{estimatedTax.toLocaleString()}</dd>
-                  </div>
                 </dl>
-
-                <div className="mt-5 border-t border-forest-100 pt-4">
-                  <div className="flex items-center justify-between text-base">
-                    <span className="font-semibold text-forest-700">Estimated total</span>
-                    <span className="font-display text-xl font-semibold text-forest-900">₦{estimatedTotal.toLocaleString()}</span>
-                  </div>
-                </div>
               </div>
             </aside>
           </div>
