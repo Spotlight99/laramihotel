@@ -67,8 +67,7 @@ export default function BookingPage() {
     ? Math.max(1, Math.ceil((new Date(bookingDates.checkOut).getTime() - new Date(bookingDates.checkIn).getTime()) / (1000 * 60 * 60 * 24)))
     : 0;
   const nightlyTotal = room?.price_per_night ? room.price_per_night * (computedNights || 1) : 0;
-  const estimatedTax = nightlyTotal * 0.075;
-  const estimatedTotal = nightlyTotal + estimatedTax;
+  const estimatedTotal = nightlyTotal;
   const buttonLabel = loading
     ? 'Processing reservation...'
     : availabilityState.loading
