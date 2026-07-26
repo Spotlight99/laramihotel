@@ -370,6 +370,16 @@ export default function ReservationLookup() {
                         </div>
                       </div>
 
+                      {/* Dashboard CTA */}
+                      <div className="mb-6 flex justify-center">
+                        <a
+                          href={`/reservation?id=${booking.id}`}
+                          className="inline-flex items-center justify-center rounded-full bg-gold-500 px-6 py-3 text-sm font-semibold text-forest-950 transition duration-200 hover:bg-gold-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500"
+                        >
+                          View Reservation Dashboard
+                        </a>
+                      </div>
+
                       {/* Actions */}
                       <div className="border-t border-forest-100 pt-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

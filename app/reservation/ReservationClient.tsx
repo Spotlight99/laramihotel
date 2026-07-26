@@ -40,7 +40,7 @@ const formatDate = (value: string) => {
 
 export default function ReservationClient() {
   const searchParams = useSearchParams();
-  const bookingIdParam = searchParams.get('booking_id');
+  const bookingIdParam = searchParams.get('id') || searchParams.get('booking_id');
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -130,6 +130,12 @@ export default function ReservationClient() {
     }
   };
 
+  const handleBackToLookup = () => {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/#check-reservation';
+    }
+  };
+
   return (
     <main className="bg-cream py-16 sm:py-20">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -154,7 +160,12 @@ export default function ReservationClient() {
               <h2 className="mt-4 text-3xl font-semibold text-forest-900">We couldn&rsquo;t find your booking</h2>
               <p className="mt-4 text-sm leading-7 text-forest-600">Please verify your booking reference and try again, or return to the search page to look up your reservation.</p>
               <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:justify-center">
-                <Link href="/" className="rounded-full bg-gold-500 px-6 py-3 text-sm font-semibold text-forest-950 transition hover:bg-gold-400">Search again</Link>
+                <button
+                  onClick={handleBackToLookup}
+                  className="rounded-full bg-gold-500 px-6 py-3 text-sm font-semibold text-forest-950 transition hover:bg-gold-400"
+                >
+                  Back to Reservation Lookup
+                </button>
                 <button
                   type="button"
                   onClick={() => setError(null)}
