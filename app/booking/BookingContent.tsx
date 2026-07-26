@@ -53,6 +53,7 @@ export default function BookingPage() {
     hotel,
   });
   const previousRoomIdRef = useRef<string | null>(roomId);
+  const availabilityRequestRef = useRef(0);
 
   const today = new Date().toISOString().split('T')[0];
   const getNextDay = (value: string) => {
@@ -145,17 +146,18 @@ export default function BookingPage() {
       return;
     }
 
+    const requestId = ++availabilityRequestRef.current;
     let isMounted = true;
     setAvailabilityState({ loading: true, checked: false, available: null });
 
     roomsAPI.checkRoomAvailability(room.id, bookingDates.checkIn, bookingDates.checkOut)
       .then((isAvailable) => {
-        if (isMounted) {
+        if (isMounted && requestId === availabilityRequestRef.current) {
           setAvailabilityState({ loading: false, checked: true, available: isAvailable });
         }
       })
       .catch(() => {
-        if (isMounted) {
+        if (isMounted && requestId === availabilityRequestRef.current) {
           setAvailabilityState({ loading: false, checked: true, available: false });
         }
       });
@@ -163,7 +165,7 @@ export default function BookingPage() {
     return () => {
       isMounted = false;
     };
-  }, [room?.id, bookingDates.checkIn, bookingDates.checkOut]);
+  }, [room?.id, bookingDates.checkIn, bookingDates.checkOut, formData.number_of_guests]);
 
   const fetchRoom = async () => {
     setRoomLoading(true);
@@ -594,6 +596,7 @@ export default function BookingPage() {
                         setValidationErrors((prev) => ({ ...prev, checkIn: '' }));
                         setBackendErrors({ fieldErrors: {}, nonFieldErrors: [] });
                         setError(null);
+                        setAvailabilityState({ loading: false, checked: false, available: null });
                       }}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${
                         validationErrors.checkIn || backendErrors.fieldErrors.check_in?.length
@@ -621,6 +624,7 @@ export default function BookingPage() {
                         setValidationErrors((prev) => ({ ...prev, checkOut: '' }));
                         setBackendErrors({ fieldErrors: {}, nonFieldErrors: [] });
                         setError(null);
+                        setAvailabilityState({ loading: false, checked: false, available: null });
                       }}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 ${
                         validationErrors.checkOut || backendErrors.fieldErrors.check_out?.length
@@ -729,6 +733,7 @@ export default function BookingPage() {
                       setFormData({ ...formData, number_of_guests: parseInt(e.target.value, 10) });
                       setBackendErrors({ fieldErrors: {}, nonFieldErrors: [] });
                       setError(null);
+                      setAvailabilityState({ loading: false, checked: false, available: null });
                     }}
                     className="w-full px-4 py-3 border border-forest-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500"
                   >
