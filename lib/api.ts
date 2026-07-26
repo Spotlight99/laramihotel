@@ -319,6 +319,19 @@ export const bookingsAPI = {
     console.log('✅ Receipt fetched:', { id });
     return data;
   },
+
+  getRoomBookings: async (roomId: number) => {
+    const url = `${API_BASE_URL}/bookings/?room_id=${roomId}`;
+    console.log('📡 Fetching room bookings:', { url, roomId });
+    
+    const res = await makeRequest(url);
+    const data = await res.json();
+    
+    // Handle both array and paginated responses
+    const bookings = Array.isArray(data) ? data : (data?.results || []);
+    console.log('✅ Room bookings fetched:', { roomId, count: bookings.length });
+    return bookings;
+  },
 };
 
 // Auth API

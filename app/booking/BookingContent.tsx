@@ -9,6 +9,7 @@ import { generateReceiptPDF, downloadReceiptAsText, ReceiptData } from '@/lib/re
 import { useAuth } from '@/lib/authContext';
 import { useHotelInfo } from '@/lib/useHotelInfo';
 import { useReservationSummary } from '@/hooks/useReservationSummary';
+import { checkRoomAvailability, BookingInfo } from '@/lib/availabilityService';
 import BookingReference from '@/components/booking/BookingReference';
 import ReservationSummary from '@/components/booking/ReservationSummary';
 import PaymentInstructions from '@/components/booking/PaymentInstructions';
@@ -150,17 +151,33 @@ export default function BookingPage() {
     let isMounted = true;
     setAvailabilityState({ loading: true, checked: false, available: null });
 
-    roomsAPI.checkRoomAvailability(room.id, bookingDates.checkIn, bookingDates.checkOut)
-      .then((isAvailable) => {
+    // Fetch room bookings and check availability using centralized service
+    (async () => {
+      try {
+        const bookings = await bookingsAPI.getRoomBookings(room.id);
+        
+        if (!isMounted || requestId !== availabilityRequestRef.current) return;
+
+        // Convert to BookingInfo format
+        const bookingInfos: BookingInfo[] = bookings.map((booking: any) => ({
+          id: booking.id,
+          checkIn: booking.check_in,
+          checkOut: booking.check_out,
+          status: booking.status,
+        }));
+
+        // Use centralized availability service
+        const result = checkRoomAvailability(bookingInfos, bookingDates.checkIn, bookingDates.checkOut);
+
         if (isMounted && requestId === availabilityRequestRef.current) {
-          setAvailabilityState({ loading: false, checked: true, available: isAvailable });
+          setAvailabilityState({ loading: false, checked: true, available: result.available });
         }
-      })
-      .catch(() => {
+      } catch (err: any) {
         if (isMounted && requestId === availabilityRequestRef.current) {
           setAvailabilityState({ loading: false, checked: true, available: false });
         }
-      });
+      }
+    })();
 
     return () => {
       isMounted = false;
@@ -833,6 +850,13 @@ export default function BookingPage() {
                     <dd className="font-semibold text-forest-900">₦{room?.price_per_night?.toLocaleString() || 0}</dd>
                   </div>
                 </dl>
+
+                <div className="mt-5 border-t border-forest-100 pt-4">
+                  <div className="flex items-center justify-between text-base">
+                    <span className="font-semibold text-forest-700">Estimated total</span>
+                    <span className="font-display text-xl font-semibold text-forest-900">₦{estimatedTotal.toLocaleString()}</span>
+                  </div>
+                </div>
               </div>
             </aside>
           </div>
